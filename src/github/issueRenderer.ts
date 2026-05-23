@@ -22,7 +22,7 @@ export function renderSingleIssue(result: IReviewResult): IIssueDraft {
    return {
       title: DEFAULT_ISSUE_TITLE,
       body: renderMarkdownReview(result),
-      labels: ['architecture', 'seamguard', 'technical-debt']
+      labels: ['architecture', 'guarddog', 'technical-debt']
    };
 }
 
@@ -32,9 +32,9 @@ export function renderSingleIssue(result: IReviewResult): IIssueDraft {
  */
 export function renderPerFindingIssues(result: IReviewResult): IIssueDraft[] {
    return result.findings.map((finding) => ({
-      title: `[SeamGuard] ${finding.id}: ${finding.title}`,
+      title: `[GuardDog] ${finding.id}: ${finding.title}`,
       body: renderFindingIssueBody(finding, result),
-      labels: uniqueLabels(['architecture', 'seamguard', ...finding.suggestedLabels])
+      labels: uniqueLabels(['architecture', 'guarddog', ...finding.suggestedLabels])
    }));
 }
 

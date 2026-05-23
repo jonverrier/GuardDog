@@ -14,7 +14,7 @@ const FIXTURE_REPO = path.join(__dirname, '../fixtures/sample-repo');
 
 describe('configLoader', () => {
    afterEach(async () => {
-      const configPath = path.join(FIXTURE_REPO, '.seamguard');
+      const configPath = path.join(FIXTURE_REPO, '.guarddog');
       await fs.rm(configPath, { recursive: true, force: true });
    });
 
@@ -23,7 +23,7 @@ describe('configLoader', () => {
       expect(config.minSeverity).toBe('medium');
       expect(config.minImpact).toBe('medium');
       expect(config.maxFindings).toBe(20);
-      expect(config.outputMarkdown).toBe('seamguard-review.md');
+      expect(config.outputMarkdown).toBe('guarddog-review.md');
    });
 
    it('merges config file and CLI overrides', async () => {

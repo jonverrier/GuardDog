@@ -10,7 +10,7 @@ import { createGitHubIssues } from '../../src/github/githubClient';
 import { IReviewResult } from '../../src/schemas/finding';
 
 const SAMPLE_RESULT: IReviewResult = {
-   tool: 'SeamGuard',
+   tool: 'GuardDog',
    repoPath: '/repo',
    generatedAt: '2025-05-23T12:00:00.000Z',
    summary: {
@@ -22,7 +22,7 @@ const SAMPLE_RESULT: IReviewResult = {
    },
    findings: [
       {
-         id: 'SG-001',
+         id: 'GD-001',
          title: 'Finding one',
          severity: 'high',
          impact: 'high',
@@ -38,7 +38,7 @@ const SAMPLE_RESULT: IReviewResult = {
          suggestedLabels: ['coupling']
       },
       {
-         id: 'SG-002',
+         id: 'GD-002',
          title: 'Finding two',
          severity: 'medium',
          impact: 'medium',
@@ -59,17 +59,17 @@ const SAMPLE_RESULT: IReviewResult = {
 describe('github issue rendering', () => {
    it('renders a single combined issue draft', () => {
       const draft = renderSingleIssue(SAMPLE_RESULT);
-      expect(draft.title).toBe('SeamGuard architecture review findings');
-      expect(draft.labels).toContain('seamguard');
-      expect(draft.body).toContain('SG-001');
-      expect(draft.body).toContain('SG-002');
+      expect(draft.title).toBe('GuardDog architecture review findings');
+      expect(draft.labels).toContain('guarddog');
+      expect(draft.body).toContain('GD-001');
+      expect(draft.body).toContain('GD-002');
    });
 
    it('renders per-finding issue drafts', () => {
       const drafts = renderPerFindingIssues(SAMPLE_RESULT);
       expect(drafts).toHaveLength(2);
-      expect(drafts[0].title).toContain('SG-001');
-      expect(drafts[1].title).toContain('SG-002');
+      expect(drafts[0].title).toContain('GD-001');
+      expect(drafts[1].title).toContain('GD-002');
    });
 
    it('dry-run prints issue content without creating issues', async () => {
@@ -90,6 +90,6 @@ describe('github issue rendering', () => {
 
       expect(results).toHaveLength(0);
       expect(logs.some((l) => l.includes('dry-run'))).toBe(true);
-      expect(logs.some((l) => l.includes('SeamGuard architecture review findings'))).toBe(true);
+      expect(logs.some((l) => l.includes('GuardDog architecture review findings'))).toBe(true);
    });
 });

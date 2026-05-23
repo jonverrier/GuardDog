@@ -43,7 +43,7 @@ export interface IReviewSummary {
 }
 
 export interface IReviewResult {
-   tool: 'SeamGuard';
+   tool: 'GuardDog';
    repoPath: string;
    designFile?: string;
    generatedAt: string;
@@ -66,7 +66,7 @@ export const REVIEW_RESULT_JSON_SCHEMA: Record<string, unknown> = {
    additionalProperties: false,
    required: ['tool', 'repoPath', 'generatedAt', 'summary', 'findings'],
    properties: {
-      tool: { type: 'string', enum: ['SeamGuard'] },
+      tool: { type: 'string', enum: ['GuardDog'] },
       repoPath: { type: 'string' },
       designFile: { type: 'string' },
       generatedAt: { type: 'string' },
@@ -155,7 +155,7 @@ export const REVIEW_RESULT_JSON_SCHEMA: Record<string, unknown> = {
  * Default empty review result used as fallback for constrained response.
  */
 export const DEFAULT_REVIEW_RESULT: IReviewResult = {
-   tool: 'SeamGuard',
+   tool: 'GuardDog',
    repoPath: '',
    generatedAt: new Date(0).toISOString(),
    summary: {

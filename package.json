@@ -14,8 +14,7 @@
     "registry": "https://npm.pkg.github.com"
   },
   "bin": {
-    "guarddog": "dist/cli/index.js",
-    "seamguard": "dist/cli/index.js"
+    "guarddog": "dist/cli/index.js"
   },
   "files": [
     "dist/**/*",

@@ -28,6 +28,8 @@ System designers write a document — typically `DESIGN.md` — that explains ho
 
 GuardDog prompts an LLM to review the codebase as an architect. The reviewer prompt is distilled from the key principles of *Building Evolutionary Architectures* (adaptability, coupling, optionality, fitness functions, operability, blast radius). It reads the design document, a factual map of the repository, and a bounded set of source and config files, then returns **structured findings** — severity, evidence, risk, blast radius, and incremental remediation suggestions.
 
+When present, **C4-Auto generated docs** (`README.StrongAI.Component.md`, `README.StrongAI.Context.md`, or custom names using the `.StrongAI.Component.md` / `.StrongAI.Context.md` suffixes) are detected and prioritised in the review context — package-root rollups first, then per-directory diagrams. Run [C4-Auto](https://github.com/jonverrier/C4-Auto) first to get the richest architectural summary; GuardDog still works without them.
+
 Prompt text lives in `src/Prompts.json` and is loaded via [PromptRepository](https://github.com/jonverrier/PromptRepository). Changing review behaviour is a **prompt change** — validated by evals, not unit tests. Unit tests cover wiring (expansion, parsing, filtering); prompt quality is an eval concern.
 
 The full prompt is below (source of truth: `src/Prompts.json`). At runtime, `{architectureIntent}`, `{repoMap}`, `{contextFilesSection}`, and `{sampledReviewNote}` are replaced with scanned repository content.
@@ -102,10 +104,10 @@ Distinguish between:
 1. Findings that violate or drift from the declared architectural intent (when a design file is provided)
 2. General evolutionary architecture findings (coupling, boundaries, deployability, observability, etc.)
 
-Return JSON matching the required schema with tool set to "SeamGuard".
+Return JSON matching the required schema with tool set to "GuardDog".
 
 Requirements:
-- Assign each finding a unique id (e.g. SG-001, SG-002)
+- Assign each finding a unique id (e.g. GD-001, GD-002)
 - Include concrete evidence with file or directory references where possible
 - Separate facts (directly observed) from inferences (reasoned conclusions)
 - Rate severity, impact, confidence, and blast radius honestly
@@ -150,7 +152,7 @@ For GitHub Packages, configure `.npmrc`:
 Initialize configuration in a repository:
 
 ```bash
-seamguard init
+guarddog init
 ```
 
 Run an architecture review:
@@ -158,8 +160,8 @@ Run an architecture review:
 ```bash
 guarddog review . \
   --design ./DESIGN.md \
-  --out ./seamguard-review.md \
-  --json ./seamguard-review.json
+  --out ./guarddog-review.md \
+  --json ./guarddog-review.json
 ```
 
 ---
@@ -171,8 +173,8 @@ guarddog review . \
 ```bash
 guarddog review <repoPath> \
   --design ./DESIGN.md \
-  --out ./seamguard-review.md \
-  --json ./seamguard-review.json
+  --out ./guarddog-review.md \
+  --json ./guarddog-review.json
 ```
 
 ### Options
@@ -196,14 +198,14 @@ guarddog review <repoPath> \
 ### Init command
 
 ```bash
-seamguard init [repoPath]
+guarddog init [repoPath]
 ```
 
 Creates:
 
 ```text
-.seamguard/
-  seamguard.config.json
+.guarddog/
+  guarddog.config.json
   reviewer.md
   finding.schema.json
 ```

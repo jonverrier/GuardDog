@@ -9,7 +9,7 @@ import { renderMarkdownReview } from '../../src/core/markdownRenderer';
 import { IReviewResult } from '../../src/schemas/finding';
 
 const SAMPLE_RESULT: IReviewResult = {
-   tool: 'SeamGuard',
+   tool: 'GuardDog',
    repoPath: '/tmp/sample-repo',
    designFile: 'DESIGN.md',
    generatedAt: '2025-05-23T12:00:00.000Z',
@@ -22,7 +22,7 @@ const SAMPLE_RESULT: IReviewResult = {
    },
    findings: [
       {
-         id: 'SG-001',
+         id: 'GD-001',
          title: 'Persistence imported into API layer',
          severity: 'high',
          impact: 'high',
@@ -43,10 +43,10 @@ const SAMPLE_RESULT: IReviewResult = {
 describe('markdownRenderer', () => {
    it('renders GitHub-ready markdown with summary and findings', () => {
       const markdown = renderMarkdownReview(SAMPLE_RESULT);
-      expect(markdown).toContain('# SeamGuard Architecture Review');
+      expect(markdown).toContain('# GuardDog Architecture Review');
       expect(markdown).toContain('Overall risk: High');
       expect(markdown).toContain('Boundary drift');
-      expect(markdown).toContain('### SG-001 — Persistence imported into API layer');
+      expect(markdown).toContain('### GD-001 — Persistence imported into API layer');
       expect(markdown).toContain('`src/api/users.ts`');
       expect(markdown).toContain('#### Possible Fitness Function');
    });

@@ -19,5 +19,6 @@ describe('repoScanner', () => {
       expect(repoMap.sourceDirectories.some((d) => d.includes('src'))).toBe(true);
       expect(repoMap.ciFiles.some((f) => f.includes('.github/workflows'))).toBe(true);
       expect(repoMap.importantFiles.some((f) => f.toLowerCase().includes('design.md'))).toBe(true);
+      expect(repoMap.c4ArchitectureFiles).toContain('README.StrongAI.Context.md');
    });
 });

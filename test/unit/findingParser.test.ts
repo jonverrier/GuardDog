@@ -9,7 +9,7 @@ import { validateReviewResult } from '../../src/core/findingParser';
 import { InvalidOperationError } from '../../src/utils/errors';
 
 const VALID_RAW = {
-   tool: 'SeamGuard',
+   tool: 'GuardDog',
    repoPath: '/repo',
    generatedAt: '2025-05-23T12:00:00.000Z',
    summary: {
@@ -21,7 +21,7 @@ const VALID_RAW = {
    },
    findings: [
       {
-         id: 'SG-001',
+         id: 'GD-001',
          title: 'Weak boundary',
          severity: 'high',
          impact: 'high',
@@ -42,9 +42,9 @@ const VALID_RAW = {
 describe('findingParser', () => {
    it('validates a well-formed review result', () => {
       const result = validateReviewResult(VALID_RAW, '/repo', 'DESIGN.md', false);
-      expect(result.tool).toBe('SeamGuard');
+      expect(result.tool).toBe('GuardDog');
       expect(result.findings).toHaveLength(1);
-      expect(result.findings[0].id).toBe('SG-001');
+      expect(result.findings[0].id).toBe('GD-001');
       expect(result.summary.highSeverityCount).toBe(1);
    });
 

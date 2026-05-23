@@ -13,7 +13,7 @@ import { IFinding, IReviewResult } from '../schemas/finding';
 export function renderMarkdownReview(result: IReviewResult): string {
    const lines: string[] = [];
 
-   lines.push('# SeamGuard Architecture Review');
+   lines.push('# GuardDog Architecture Review');
    lines.push('');
    lines.push(`Repository: \`${result.repoPath}\``);
    if (result.designFile) {

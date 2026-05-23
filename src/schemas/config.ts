@@ -1,6 +1,6 @@
 /**
  * @module schemas/config
- * Configuration types and defaults for SeamGuard reviews.
+ * Configuration types and defaults for GuardDog reviews.
  */
 // Copyright (c) 2025 Jon Verrier
 
@@ -42,7 +42,7 @@ export interface IReviewCliOptions {
    confirm?: boolean;
 }
 
-export const DEFAULT_CONFIG_FILE = '.seamguard/seamguard.config.json';
+export const DEFAULT_CONFIG_FILE = '.guarddog/guarddog.config.json';
 
 export const DEFAULT_DESIGN_CANDIDATES: readonly string[] = [
    'DESIGN.md',
@@ -53,8 +53,8 @@ export const DEFAULT_DESIGN_CANDIDATES: readonly string[] = [
 
 export const DEFAULT_CONFIG: IGuardDogConfig = {
    designFile: 'DESIGN.md',
-   outputMarkdown: 'seamguard-review.md',
-   outputJson: 'seamguard-review.json',
+   outputMarkdown: 'guarddog-review.md',
+   outputJson: 'guarddog-review.json',
    minSeverity: 'medium',
    minImpact: 'medium',
    maxFindings: 20,
@@ -66,8 +66,8 @@ export const DEFAULT_CONFIG: IGuardDogConfig = {
 
 export const DEFAULT_ISSUE_LABELS: readonly string[] = [
    'architecture',
-   'seamguard',
+   'guarddog',
    'technical-debt'
 ];
 
-export const DEFAULT_ISSUE_TITLE = 'SeamGuard architecture review findings';
+export const DEFAULT_ISSUE_TITLE = 'GuardDog architecture review findings';

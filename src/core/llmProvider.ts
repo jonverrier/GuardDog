@@ -99,7 +99,7 @@ export class PromptRepositoryLlmProvider implements ILlmProvider {
          []
       );
 
-      if (!result || result.tool !== 'SeamGuard') {
+      if (!result || result.tool !== 'GuardDog') {
          throw new InvalidOperationError('LLM returned an invalid or empty review result.');
       }
 

@@ -10,7 +10,7 @@ import { IFinding, IReviewResult } from '../../src/schemas/finding';
 
 function makeFinding(overrides: Partial<IFinding>): IFinding {
    return {
-      id: 'SG-001',
+      id: 'GD-001',
       title: 'Test finding',
       severity: 'medium',
       impact: 'medium',
@@ -37,19 +37,19 @@ describe('findingFilter', () => {
 
    it('filters by both severity and impact', () => {
       const findings = [
-         makeFinding({ id: 'SG-001', severity: 'low', impact: 'low' }),
-         makeFinding({ id: 'SG-002', severity: 'high', impact: 'low' }),
-         makeFinding({ id: 'SG-003', severity: 'high', impact: 'high' }),
-         makeFinding({ id: 'SG-004', severity: 'medium', impact: 'high' })
+         makeFinding({ id: 'GD-001', severity: 'low', impact: 'low' }),
+         makeFinding({ id: 'GD-002', severity: 'high', impact: 'low' }),
+         makeFinding({ id: 'GD-003', severity: 'high', impact: 'high' }),
+         makeFinding({ id: 'GD-004', severity: 'medium', impact: 'high' })
       ];
 
       const filtered = filterFindings(findings, 'high', 'high');
-      expect(filtered.map((f) => f.id)).toEqual(['SG-003']);
+      expect(filtered.map((f) => f.id)).toEqual(['GD-003']);
    });
 
    it('applies max findings limit', () => {
       const result: IReviewResult = {
-         tool: 'SeamGuard',
+         tool: 'GuardDog',
          repoPath: '/repo',
          generatedAt: new Date().toISOString(),
          summary: {
@@ -60,9 +60,9 @@ describe('findingFilter', () => {
             mainThemes: []
          },
          findings: [
-            makeFinding({ id: 'SG-001', severity: 'high', impact: 'high' }),
-            makeFinding({ id: 'SG-002', severity: 'high', impact: 'high' }),
-            makeFinding({ id: 'SG-003', severity: 'high', impact: 'high' })
+            makeFinding({ id: 'GD-001', severity: 'high', impact: 'high' }),
+            makeFinding({ id: 'GD-002', severity: 'high', impact: 'high' }),
+            makeFinding({ id: 'GD-003', severity: 'high', impact: 'high' })
          ]
       };
 

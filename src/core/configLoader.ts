@@ -16,7 +16,7 @@ import { readTextFileIfExists } from '../utils/fileSystem';
 import { InvalidParameterError } from '../utils/errors';
 
 /**
- * Loads configuration from `.seamguard/seamguard.config.json` if present.
+ * Loads configuration from `.guarddog/guarddog.config.json` if present.
  * @param repoPath - Repository root path
  */
 export async function loadConfigFile(repoPath: string): Promise<Partial<IGuardDogConfig>> {

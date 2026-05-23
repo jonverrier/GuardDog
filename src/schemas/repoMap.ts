@@ -25,4 +25,6 @@ export interface IRepoMap {
    ciFiles: string[];
    deploymentFiles: string[];
    dependencyFiles: string[];
+   /** C4-Auto generated architecture docs (Component / Context README files). */
+   c4ArchitectureFiles: string[];
 }

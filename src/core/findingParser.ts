@@ -58,7 +58,7 @@ export function validateReviewResult(
    const criticalSeverityCount = findings.filter((f) => f.severity === 'critical').length;
 
    return {
-      tool: 'SeamGuard',
+      tool: 'GuardDog',
       repoPath,
       designFile,
       generatedAt: typeof obj.generatedAt === 'string' ? obj.generatedAt : new Date().toISOString(),
@@ -187,7 +187,7 @@ export function isEmptyDefaultResult(result: IReviewResult): boolean {
  * @param rawContent - Raw response text
  */
 export async function saveDebugResponse(repoPath: string, rawContent: string): Promise<string> {
-   const debugPath = `${repoPath}/.seamguard/seamguard-debug-${Date.now()}.json`;
+   const debugPath = `${repoPath}/.guarddog/guarddog-debug-${Date.now()}.json`;
    await writeTextFile(debugPath, rawContent);
    return debugPath;
 }

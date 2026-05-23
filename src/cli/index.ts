@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * @module cli/index
- * GuardDog / SeamGuard CLI entry point.
+ * GuardDog CLI entry point.
  */
 // Copyright (c) 2025 Jon Verrier
 
@@ -13,7 +13,7 @@ const USAGE = `GuardDog — Architecture Review CLI
 
 Usage:
   guarddog review <repoPath> [options]
-  seamguard init [repoPath]
+  guarddog init [repoPath]
 
 Review options:
   --design <path>              Architecture intent / design file
@@ -33,7 +33,7 @@ Review options:
 Examples:
   guarddog review . --design DESIGN.md --out review.md --json review.json
   guarddog review . --design DESIGN.md --github-issue --repo owner/repo --confirm
-  seamguard init
+  guarddog init
 `;
 
 async function main(): Promise<void> {

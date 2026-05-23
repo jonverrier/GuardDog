@@ -3,4 +3,4 @@ dist/
 coverage/
 *.log
 .env
-.seamguard/seamguard-debug-*.json
+.guarddog/guarddog-debug-*.json

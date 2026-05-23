@@ -18,7 +18,7 @@ export function createPromptRepository(): IPromptRepository {
 
 /**
  * Returns the reviewer constitution (system prompt) from Prompts.json.
- * Used by `seamguard init` to scaffold `.seamguard/reviewer.md`.
+ * Used by `guarddog init` to scaffold `.guarddog/reviewer.md`.
  */
 export function getReviewerConstitutionText(promptRepo: IPromptRepository = createPromptRepository()): string {
    const prompt = promptRepo.getPrompt(architectureReviewPromptId);

@@ -5,6 +5,7 @@
 // Copyright (c) 2025 Jon Verrier
 
 import * as path from 'path';
+import { capC4ArchitectureFilesForContext, sortC4ArchitectureFiles } from './c4ArchitectureDocs';
 import { IRepoMap } from '../schemas/repoMap';
 import { loadGitignorePatterns, readContextFile, walkFiles } from '../utils/fileSystem';
 import { ILogger, defaultLogger } from '../utils/logger';
@@ -56,27 +57,39 @@ export async function selectContextFiles(
    const gitignorePatterns = await loadGitignorePatterns(path.join(rootPath, '.gitignore'));
    const allFiles = await walkFiles(rootPath, gitignorePatterns);
 
-   const priorityPaths = new Set<string>();
+   const priorityPaths: string[] = [];
+   const prioritySet = new Set<string>();
+
+   const addPriority = (relativePath: string): void => {
+      if (!prioritySet.has(relativePath) && allFiles.includes(relativePath)) {
+         prioritySet.add(relativePath);
+         priorityPaths.push(relativePath);
+      }
+   };
 
    if (designFile) {
-      priorityPaths.add(designFile);
+      addPriority(designFile);
+   }
+
+   for (const file of capC4ArchitectureFilesForContext(sortC4ArchitectureFiles(repoMap.c4ArchitectureFiles))) {
+      addPriority(file);
    }
 
    for (const file of repoMap.importantFiles) {
-      priorityPaths.add(file);
+      addPriority(file);
    }
    for (const file of repoMap.configFiles) {
-      priorityPaths.add(file);
+      addPriority(file);
    }
    for (const file of repoMap.ciFiles) {
-      priorityPaths.add(file);
+      addPriority(file);
    }
    for (const file of repoMap.deploymentFiles) {
-      priorityPaths.add(file);
+      addPriority(file);
    }
    for (const file of repoMap.dependencyFiles) {
       if (file.endsWith('package.json')) {
-         priorityPaths.add(file);
+         addPriority(file);
       }
    }
 
@@ -85,7 +98,7 @@ export async function selectContextFiles(
          (f) => f.startsWith(`${dir}/`) && isContextCandidate(f)
       );
       for (const file of dirFiles.slice(0, 8)) {
-         priorityPaths.add(file);
+         addPriority(file);
       }
    }
 
@@ -96,11 +109,11 @@ export async function selectContextFiles(
             (f.includes('setup') || f.includes('jest') || f.includes('config'))
       );
       for (const file of setupFiles.slice(0, 3)) {
-         priorityPaths.add(file);
+         addPriority(file);
       }
    }
 
-   const candidatePaths = [...priorityPaths].filter((f) => allFiles.includes(f));
+   const candidatePaths = priorityPaths;
    const sampledReview = candidatePaths.length < allFiles.filter(isContextCandidate).length;
 
    if (sampledReview) {

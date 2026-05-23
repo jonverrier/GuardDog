@@ -5,6 +5,7 @@
 // Copyright (c) 2025 Jon Verrier
 
 import * as path from 'path';
+import { findC4ArchitectureFiles } from './c4ArchitectureDocs';
 import { IPackageInfo, IRepoMap, PackageManager } from '../schemas/repoMap';
 import { loadGitignorePatterns, readTextFileIfExists, walkFiles } from '../utils/fileSystem';
 
@@ -80,19 +81,21 @@ export async function generateRepoMap(rootPath: string): Promise<IRepoMap> {
          file.includes('architecture/')
       );
    });
+   const c4ArchitectureFiles = findC4ArchitectureFiles(allFiles);
 
    return {
       rootPath,
       packageManager,
       detectedLanguages,
       packages,
-      importantFiles: unique(importantFiles).slice(0, 50),
+      importantFiles: unique([...importantFiles, ...c4ArchitectureFiles]).slice(0, 50),
       sourceDirectories: unique(sourceDirectories),
       testDirectories: unique(testDirectories),
       configFiles: unique(configFiles).slice(0, 40),
       ciFiles: unique(ciFiles).slice(0, 20),
       deploymentFiles: unique(deploymentFiles).slice(0, 20),
-      dependencyFiles: unique(dependencyFiles).slice(0, 20)
+      dependencyFiles: unique(dependencyFiles).slice(0, 20),
+      c4ArchitectureFiles
    };
 }
 
