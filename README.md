@@ -2,14 +2,45 @@
 
 **Architecture review CLI for evolutionary architecture risks.**
 
-GuardDog (SeamGuard) is a standalone CLI package (`@jonverrier/guard-dog`) that reviews a codebase for its ability to evolve safely over time. It reads architecture intent from a design file, scans the repository, runs an LLM-based architecture review via [PromptRepository](https://github.com/jonverrier/PromptRepository), and emits structured findings as Markdown and JSON.
+---
 
-This is not a style checker or generic code smell detector. It protects architectural seams — coupling, drift, weak boundaries, deployability risks, observability gaps, and migration blockers.
+## Where this came from
+
+During a client engagement I worked on systems that did not seem designed for change or co-existence. They had been shaped for **greenfield** delivery — clean starts, happy paths — rather than **brownfield** reality: incremental migration, overlapping versions, and systems that must evolve while still running.
+
+A colleague recommended [*Building Evolutionary Architectures*](https://evolutionaryarchitecture.com/) by Neal Ford, Rebecca Parsons, and Patrick Kua. After reading it, I kept thinking about how to apply that thinking in a world where AI coding assistants are writing and refactoring code at scale. Manual architecture review does not scale; lint rules catch syntax, not intent; and without an explicit record of what the architecture *should* be, drift is invisible until it hurts.
+
+That is how GuardDog came about.
+
+GuardDog is not a style checker or a generic code-smell detector. It asks a different question: **can this codebase evolve safely over time?** It looks for coupling, boundary drift, high blast-radius change areas, weak encapsulation, missing fitness functions, and the other risks the book emphasises — with a bias toward incremental remediation, not rewrites.
+
+---
+
+## How it works
+
+GuardDog rests on three ideas:
+
+### 1. Designers declare intent in `DESIGN.md`
+
+System designers write a document — typically `DESIGN.md` — that explains how they want the system to be structured: layers, encapsulation, extension points, allowed dependencies, deployment boundaries, and so on. This is the **architectural contract**. GuardDog uses it to distinguish findings that drift from declared intent from general evolutionary-architecture observations.
+
+### 2. An LLM acts as architecture reviewer
+
+GuardDog prompts an LLM to review the codebase as an architect. The reviewer prompt is distilled from the key principles of *Building Evolutionary Architectures* (adaptability, coupling, optionality, fitness functions, operability, blast radius). It reads the design document, a factual map of the repository, and a bounded set of source and config files, then returns **structured findings** — severity, evidence, risk, blast radius, and incremental remediation suggestions.
+
+Prompt text lives in `src/Prompts.json` and is loaded via [PromptRepository](https://github.com/jonverrier/PromptRepository). Changing review behaviour is a **prompt change** — validated by evals, not unit tests. Unit tests cover wiring (expansion, parsing, filtering); prompt quality is an eval concern.
+
+### 3. A CLI that fits any workflow
+
+Everything is packaged as a command-line tool so it is easy to run locally, in CI, on a schedule, or from another agent. Output is Markdown and JSON; optionally GuardDog opens a GitHub issue (dry-run by default, create with `--confirm`).
+
+```bash
+guarddog review . --design DESIGN.md --out review.md --json review.json
+```
 
 ---
 
 ## Install
-
 **Prerequisites:** Node.js 20+, `OPENAI_API_KEY` for LLM reviews.
 
 ```bash

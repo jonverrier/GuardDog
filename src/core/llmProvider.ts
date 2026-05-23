@@ -9,13 +9,18 @@ import {
    EModel,
    EModelProvider,
    EVerbosity,
-   IChatDriver
+   IChatDriver,
+   IPromptRepository,
+   InvalidOperationError as PromptInvalidOperationError
 } from '@jonverrier/prompt-repository';
 import {
    DEFAULT_REVIEW_RESULT,
    IReviewResult,
    REVIEW_RESULT_JSON_SCHEMA
 } from '../schemas/finding';
+import { architectureReviewPromptId } from '../PromptIds';
+import { createPromptRepository } from './promptFactory';
+import { IReviewPromptParams } from './reviewPromptBuilder';
 import { InvalidOperationError, InvalidStateError } from '../utils/errors';
 
 /**
@@ -26,35 +31,63 @@ export interface ILlmProvider {
 }
 
 /**
- * PromptRepository-backed provider using constrained JSON schema output.
+ * PromptRepository-backed provider using prompt templates and constrained JSON output.
  */
 export class PromptRepositoryLlmProvider implements ILlmProvider {
    private readonly chatDriver: IChatDriver;
+   private readonly promptRepo: IPromptRepository;
 
-   constructor(chatDriver?: IChatDriver) {
+   constructor(chatDriver?: IChatDriver, promptRepo?: IPromptRepository) {
       this.chatDriver = chatDriver ?? new ChatDriverFactory().create(EModel.kLarge, EModelProvider.kOpenAI);
+      this.promptRepo = promptRepo ?? createPromptRepository();
    }
 
    /**
     * Returns raw JSON string from constrained model response.
-    * @param prompt - Full user prompt (system prompt passed separately)
+    * @param params - Template parameters for the ArchitectureReview prompt
     */
-   async complete(prompt: string): Promise<string> {
-      const result = await this.getStructuredReview('', prompt);
+   async completeFromParams(params: IReviewPromptParams): Promise<string> {
+      const result = await this.getStructuredReview(params);
       return JSON.stringify(result);
    }
 
    /**
-    * Gets a structured review result using JSON schema constraint.
-    * @param systemPrompt - Reviewer constitution
-    * @param userPrompt - Review task with context
+    * @deprecated Use completeFromParams — retained for interface compatibility.
     */
-   async getStructuredReview(systemPrompt: string, userPrompt: string): Promise<IReviewResult> {
+   async complete(prompt: string): Promise<string> {
+      return this.completeFromParams({
+         architectureIntent: prompt,
+         repoMap: '{}',
+         contextFilesSection: '',
+         sampledReviewNote: ''
+      });
+   }
+
+   /**
+    * Loads the ArchitectureReview prompt, expands templates, and returns structured JSON.
+    * @param params - Runtime values for prompt template placeholders
+    */
+   async getStructuredReview(params: IReviewPromptParams): Promise<IReviewResult> {
       if (!process.env.OPENAI_API_KEY) {
          throw new InvalidStateError(
             'OPENAI_API_KEY environment variable is required for LLM review.'
          );
       }
+
+      const prompt = this.promptRepo.getPrompt(architectureReviewPromptId);
+      if (!prompt) {
+         throw new InvalidOperationError(
+            `Prompt not found: ${architectureReviewPromptId}. Check Prompts.json.`
+         );
+      }
+
+      const systemPrompt = this.promptRepo.expandSystemPrompt(prompt, {});
+      const userPrompt = this.promptRepo.expandUserPrompt(prompt, {
+         architectureIntent: params.architectureIntent,
+         repoMap: params.repoMap,
+         contextFilesSection: params.contextFilesSection,
+         sampledReviewNote: params.sampledReviewNote
+      });
 
       const result = await this.chatDriver.getConstrainedModelResponse<IReviewResult>(
          systemPrompt,
@@ -80,3 +113,5 @@ export class PromptRepositoryLlmProvider implements ILlmProvider {
 export function createDefaultLlmProvider(): PromptRepositoryLlmProvider {
    return new PromptRepositoryLlmProvider();
 }
+
+export { PromptInvalidOperationError };
