@@ -134,16 +134,26 @@ guarddog review . --design DESIGN.md --out review.md --json review.json
 ## Install
 **Prerequisites:** Node.js 20+, `OPENAI_API_KEY` for LLM reviews.
 
-```bash
-npm install -g @jonverrier/guard-dog
-```
-
 For GitHub Packages, configure `.npmrc`:
 
 ```ini
 @jonverrier:registry=https://npm.pkg.github.com
 //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
 ```
+
+Global CLI:
+
+```bash
+npm install -g @jonverrier/guard-dog
+```
+
+Project devDependency (e.g. architecture review in CI or scripts):
+
+```bash
+npm install --save-dev @jonverrier/guard-dog
+```
+
+Then run via `npx guarddog` or the `guarddog` bin from `node_modules/.bin`.
 
 ---
 
