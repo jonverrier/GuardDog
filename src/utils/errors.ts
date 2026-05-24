@@ -4,6 +4,17 @@
  */
 // Copyright (c) 2025 Jon Verrier
 
+// ===Start StrongAI Generated Comment (20260524)===
+// This module defines the core error types used across GuardDog. It provides a small hierarchy of custom Error subclasses so callers can throw and catch failures consistently and distinguish between common failure categories.
+// 
+// GuardDogError is the base class for all GuardDog-specific errors. It extends the built-in Error and sets a stable name value so error instances can be identified reliably at runtime and in logs.
+// 
+// InvalidParameterError represents bad arguments or invalid input values supplied to an API. InvalidOperationError is used when an action is not allowed given the current context or lifecycle step. InvalidStateError indicates missing or inconsistent state, typically due to absent required configuration or initialization. ConnectionError represents failures talking to external services, networks, or remote APIs.
+// 
+// The module has no external imports. It relies only on JavaScript’s built-in Error behavior, adding a consistent naming convention and typed classes for clearer error handling.
+// ===End StrongAI Generated Comment===
+
+
 /** Base class for GuardDog errors. */
 export class GuardDogError extends Error {
    constructor(message: string) {

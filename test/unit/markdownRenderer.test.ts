@@ -51,8 +51,23 @@ describe('markdownRenderer', () => {
       expect(markdown).toContain('#### Possible Fitness Function');
    });
 
-   it('notes sampled review when flagged', () => {
-      const markdown = renderMarkdownReview({ ...SAMPLE_RESULT, sampledReview: true });
-      expect(markdown).toContain('sampled review');
+   it('renders context coverage section when provided', () => {
+      const markdown = renderMarkdownReview({
+         ...SAMPLE_RESULT,
+         contextCoverage: {
+            rankingMode: 'c4-llm',
+            c4DocsDiscovered: 10,
+            c4DocsInReview: 4,
+            rankedSourcePaths: 20,
+            sourcePathsInReview: 18,
+            discardedTotal: 2,
+            discardedByLayer: { design: 0, c4: 2, source: 0 },
+            layerTruncation: { design: false, c4: true, source: false },
+            sampledSourceReview: false
+         }
+      });
+      expect(markdown).toContain('## Context coverage');
+      expect(markdown).toContain('C4-guided');
+      expect(markdown).not.toContain('sampled review');
    });
 });

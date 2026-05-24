@@ -4,6 +4,17 @@
  */
 // Copyright (c) 2025 Jon Verrier
 
+// ===Start StrongAI Generated Comment (20260524)===
+// Loads and resolves GuardDog configuration by combining built-in defaults, an optional repo config file, and CLI flag overrides. The config file is expected at the repository root under the default config filename and is parsed as JSON; missing files produce an empty override, and invalid JSON triggers a parameter error.
+// 
+// Exports loadConfigFile(repoPath), which reads the config file using a safe file helper and returns a partial config object. Exports loadConfig(repoPath, cliOptions), which merges DEFAULT_CONFIG with file overrides (including a nested merge for the github section), then applies CLI options to override fields such as design/output paths, JSON output toggle, model, finding thresholds, token budgets, and GitHub issue settings. It validates minSeverity and minImpact against the allowed levels.
+// 
+// Also exports parseSeverity and parseImpact to normalize and validate user-provided threshold strings into FindingSeverity/FindingImpact values.
+// 
+// Key dependencies include Node path joining, schema constants and types from ../schemas/config and ../schemas/finding, readTextFileIfExists for I/O, and InvalidParameterError for consistent validation failures.
+// ===End StrongAI Generated Comment===
+
+
 import * as path from 'path';
 import {
    DEFAULT_CONFIG,
@@ -83,6 +94,27 @@ export async function loadConfig(
    }
    if (cliOptions.noGithub) {
       merged.github.enabled = false;
+   }
+   if (cliOptions.contextTokenBudget !== undefined) {
+      merged.contextTokenBudget = cliOptions.contextTokenBudget;
+   }
+   if (cliOptions.c4TokenBudget !== undefined) {
+      merged.c4TokenBudget = cliOptions.c4TokenBudget;
+   }
+   if (cliOptions.designTokenBudget !== undefined) {
+      merged.designTokenBudget = cliOptions.designTokenBudget;
+   }
+   if (cliOptions.rankerC4TokenBudget !== undefined) {
+      merged.rankerC4TokenBudget = cliOptions.rankerC4TokenBudget;
+   }
+   if (cliOptions.maxFileTokens !== undefined) {
+      merged.maxFileTokens = cliOptions.maxFileTokens;
+   }
+   if (cliOptions.componentFile) {
+      merged.componentFile = cliOptions.componentFile;
+   }
+   if (cliOptions.contextFile) {
+      merged.contextFile = cliOptions.contextFile;
    }
 
    validateSeverity(merged.minSeverity, 'minSeverity');

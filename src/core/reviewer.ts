@@ -4,6 +4,11 @@
  */
 // Copyright (c) 2025 Jon Verrier
 
+// ===Start StrongAI Generated Comment (20260524)===
+// Orchestrates the end-to-end architecture review pipeline for a repository. The module’s main export is runReview, which resolves the target repo path, loads configuration and the design document, scans the repo to build a structured repo map, and selects relevant context files and sampled prior review content to ground the analysis. It then builds prompt parameters and calls an LLM provider to produce a structured review result. The result is checked for empty/unparseable output, validated against expected schema and context, and filtered by severity, impact, and maximum finding count. Finally, it renders a Markdown report and optionally writes both Markdown and JSON outputs, supporting a dry-run mode that logs intended writes without touching disk. Key dependencies include loadConfig, loadDesignFile, generateRepoMap, selectContextFiles, buildReviewPromptParams, and the LLM provider factory; validateReviewResult, isEmptyDefaultResult, and saveDebugResponse for parsing safeguards; and renderMarkdownReview plus writeTextFile for output. InvalidOperationError is used to surface LLM and parsing failures clearly.
+// ===End StrongAI Generated Comment===
+
+
 import * as path from 'path';
 import { loadConfig } from './configLoader';
 import { loadDesignFile } from './designLoader';
@@ -13,6 +18,7 @@ import { applyFindingFilters } from './findingFilter';
 import { validateReviewResult, isEmptyDefaultResult, saveDebugResponse } from './findingParser';
 import { renderMarkdownReview } from './markdownRenderer';
 import { createDefaultLlmProvider, PromptRepositoryLlmProvider } from './llmProvider';
+import { buildContextCoverageSummary } from './contextCoverageNotes';
 import { buildReviewPromptParams } from './reviewPromptBuilder';
 import { IReviewCliOptions } from '../schemas/config';
 import { IReviewResult } from '../schemas/finding';
@@ -40,15 +46,29 @@ export async function runReview(
    const repoPath = await resolveRepoPath(cliOptions.repoPath);
    const config = await loadConfig(repoPath, cliOptions);
 
+   const c4Options = {
+      componentFile: config.componentFile,
+      contextFile: config.contextFile
+   };
+
    const design = await loadDesignFile(repoPath, config.designFile, logger);
-   const repoMap = await generateRepoMap(repoPath);
-   const context = await selectContextFiles(repoPath, repoMap, design.designFile, logger);
+   const repoMap = await generateRepoMap(repoPath, c4Options);
+   const context = await selectContextFiles(
+      repoPath,
+      repoMap,
+      design.designFile,
+      design.designContent,
+      config,
+      logger
+   );
+
+   repoMap.contextSelection = context.contextSelection;
 
    const promptParams = buildReviewPromptParams(
       JSON.stringify(repoMap, null, 2),
       design.designContent,
       context.files,
-      context.sampledReview
+      context.contextSelection
    );
 
    logger.info('Running LLM architecture review...');
@@ -61,20 +81,27 @@ export async function runReview(
    }
 
    if (isEmptyDefaultResult(rawResult)) {
-      const debugPath = await saveDebugResponse(
-         repoPath,
-         JSON.stringify(rawResult, null, 2)
-      );
+      const rawJson = JSON.stringify(rawResult, null, 2);
+      if (cliOptions.dryRun) {
+         logger.info('[dry-run] Skipping LLM debug artifact write under .guarddog/');
+         throw new InvalidOperationError(
+            'LLM returned an empty or unparseable result. Debug output was not written (--dry-run).'
+         );
+      }
+      const debugPath = await saveDebugResponse(repoPath, rawJson);
       throw new InvalidOperationError(
          `LLM returned an empty or unparseable result. Debug output saved to ${debugPath}`
       );
    }
 
+   const contextCoverage = buildContextCoverageSummary(context.contextSelection);
+
    let validated = validateReviewResult(
       rawResult,
       repoPath,
       design.designFile,
-      context.sampledReview
+      context.sampledReview,
+      contextCoverage
    );
 
    validated = applyFindingFilters(

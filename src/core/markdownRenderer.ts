@@ -4,6 +4,16 @@
  */
 // Copyright (c) 2025 Jon Verrier
 
+// ===Start StrongAI Generated Comment (20260524)===
+// Renders GuardDog architecture review results into GitHub-ready Markdown. The module takes a structured review result and produces a single Markdown string with a consistent report layout: header metadata (repository, optional design file, generation time, and a sampled-review note), a summary section (overall risk, main themes, and finding counts), and a findings section.
+// 
+// renderMarkdownReview is the only export. It builds the report line by line, handles the empty-findings case with a short message, and ensures the final output ends with a trailing newline. Each finding is formatted with an H3 heading and subsections for evidence, facts, inferences, risk, blast radius, recommendation, and a possible fitness function.
+// 
+// The module relies on IFinding and IReviewResult from ../schemas/finding to define the expected shape of the input data. Internal helpers renderFinding formats a single finding, and capitalize normalizes enum-like strings for display.
+// ===End StrongAI Generated Comment===
+
+
+import { formatContextCoverageMarkdown } from './contextCoverageNotes';
 import { IFinding, IReviewResult } from '../schemas/finding';
 
 /**
@@ -22,13 +32,15 @@ export function renderMarkdownReview(result: IReviewResult): string {
       lines.push('Design file: *(none — general evolutionary architecture review)*');
    }
    lines.push(`Generated: \`${result.generatedAt}\``);
-   if (result.sampledReview) {
-      lines.push('');
-      lines.push(
-         '> **Note:** This is a sampled review — not all repository files were included in the analysis context.'
-      );
-   }
    lines.push('');
+   if (result.contextCoverage) {
+      lines.push(...formatContextCoverageMarkdown(result.contextCoverage));
+   } else if (result.sampledReview) {
+      lines.push(
+         '> **Note:** Some ranked source files were omitted from the review context due to token budgets.'
+      );
+      lines.push('');
+   }
    lines.push('## Summary');
    lines.push('');
    lines.push(`Overall risk: ${capitalize(result.summary.overallRisk)}`);

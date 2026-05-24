@@ -19,6 +19,15 @@ describe('c4ArchitectureDocs', () => {
       expect(isC4ArchitectureDoc('README.md')).toBe(false);
    });
 
+   it('detects custom configured C4 filenames', () => {
+      const options = {
+         componentFile: 'ARCH.Component.md',
+         contextFile: 'ARCH.Context.md'
+      };
+      expect(isC4ArchitectureDoc('src/ARCH.Component.md', options)).toBe(true);
+      expect(isC4ArchitectureDoc('ARCH.Context.md', options)).toBe(true);
+   });
+
    it('sorts package-root C4 files before nested paths', () => {
       const sorted = sortC4ArchitectureFiles([
          'src/README.StrongAI.Component.md',

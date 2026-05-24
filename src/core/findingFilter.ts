@@ -4,6 +4,17 @@
  */
 // Copyright (c) 2025 Jon Verrier
 
+// ===Start StrongAI Generated Comment (20260524)===
+// This module filters review findings by minimum severity and impact thresholds, and can also cap the number of findings returned. It relies on schema types and constants from ../schemas/finding, including IFinding and IReviewResult shapes, the FindingSeverity and FindingImpact string unions, and the ordering arrays used to compare levels.
+// 
+// levelRank converts a severity or impact label into a numeric rank based on the configured ordering. Unknown values fall back to rank 0. meetsMinimum compares two levels and returns whether the actual value meets or exceeds the required minimum using levelRank.
+// 
+// filterFindings takes a list of IFinding records and returns only those whose severity and impact both satisfy the minimum thresholds. applyFindingFilters applies filterFindings to an IReviewResult, slices the results to maxFindings, and returns a new review result with an updated summary. The summary’s findingCount, highSeverityCount, and criticalSeverityCount are recomputed from the filtered list.
+// 
+// IMPACT_ORDER is re-exported for testing to confirm ordering behavior.
+// ===End StrongAI Generated Comment===
+
+
 import {
    FindingImpact,
    FindingSeverity,

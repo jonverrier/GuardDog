@@ -4,6 +4,15 @@
  */
 // Copyright (c) 2025 Jon Verrier
 
+// ===Start StrongAI Generated Comment (20260524)===
+// This module wires up production prompt storage for GuardDog by creating a prompt repository backed by the bundled Prompts.json file. It provides a simple factory so the rest of the app can access prompts through a common IPromptRepository interface without knowing the storage details.
+// 
+// createPromptRepository constructs a PromptInMemoryRepository from @jonverrier/prompt-repository and seeds it with the typedPrompts loaded from Prompts.json (cast to IPrompt[]). This is the default repository used by other functions when no repository is supplied.
+// 
+// getReviewerConstitutionText reads the system prompt text for the architecture review prompt. It looks up the prompt by architectureReviewPromptId and returns its systemPrompt field. This value is used by the guarddog init command to scaffold .guarddog/reviewer.md. If the prompt is missing or does not contain a systemPrompt, the function throws InvalidOperationError to clearly signal a misconfigured or incomplete Prompts.json bundle.
+// ===End StrongAI Generated Comment===
+
+
 import { IPrompt, IPromptRepository, PromptInMemoryRepository } from '@jonverrier/prompt-repository';
 import typedPrompts from '../Prompts.json';
 import { architectureReviewPromptId } from '../PromptIds';

@@ -4,9 +4,14 @@
  */
 // Copyright (c) 2025 Jon Verrier
 
+// ===Start StrongAI Generated Comment (20260524)===
+// Generates a lightweight, factual “repo map” by scanning a repository’s file tree and summarizing key structure signals. The main export is generateRepoMap(rootPath, c4Options), which walks the repo (respecting .gitignore) and returns an IRepoMap containing the detected package manager, packages, languages, common source/test directories, and lists of notable files (config, CI, deployment, dependency, and architecture docs). It detects the package manager from lockfiles and workspace markers, extracts up to 30 package entries by reading package.json files, and infers languages from known file extensions. It also finds C4 architecture documents and merges them into the “important files” list, with several lists capped to keep output small. Key dependencies include Node’s path utilities, schema types (IRepoMap, IPackageInfo, PackageManager), C4 helpers (IC4FileOptions, findC4ArchitectureFiles), and filesystem utilities (loadGitignorePatterns, walkFiles, readTextFileIfExists) that provide the core scanning and file-reading behavior.
+// ===End StrongAI Generated Comment===
+
+
 import * as path from 'path';
-import { findC4ArchitectureFiles } from './c4ArchitectureDocs';
 import { IPackageInfo, IRepoMap, PackageManager } from '../schemas/repoMap';
+import { IC4FileOptions, findC4ArchitectureFiles } from './c4ArchitectureDocs';
 import { loadGitignorePatterns, readTextFileIfExists, walkFiles } from '../utils/fileSystem';
 
 const SOURCE_DIR_NAMES = ['src', 'lib', 'app', 'packages', 'server', 'client'];
@@ -48,8 +53,12 @@ const LANGUAGE_EXTENSIONS: Record<string, string> = {
 /**
  * Scans a repository and returns a factual map of its structure.
  * @param rootPath - Absolute repository root path
+ * @param c4Options - Optional C4 filename configuration
  */
-export async function generateRepoMap(rootPath: string): Promise<IRepoMap> {
+export async function generateRepoMap(
+   rootPath: string,
+   c4Options?: IC4FileOptions
+): Promise<IRepoMap> {
    const gitignorePatterns = await loadGitignorePatterns(path.join(rootPath, '.gitignore'));
    const allFiles = await walkFiles(rootPath, gitignorePatterns);
 
@@ -81,7 +90,7 @@ export async function generateRepoMap(rootPath: string): Promise<IRepoMap> {
          file.includes('architecture/')
       );
    });
-   const c4ArchitectureFiles = findC4ArchitectureFiles(allFiles);
+   const c4ArchitectureFiles = findC4ArchitectureFiles(allFiles, c4Options);
 
    return {
       rootPath,

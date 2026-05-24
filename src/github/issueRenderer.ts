@@ -4,6 +4,19 @@
  */
 // Copyright (c) 2025 Jon Verrier
 
+// ===Start StrongAI Generated Comment (20260524)===
+// This module turns GuardDog review results into GitHub issue drafts. It produces ready-to-submit issue data with a title, a Markdown body, and a set of labels.
+// 
+// IIssueDraft defines the shape of an issue draft object with title, body, and labels fields.
+// 
+// renderSingleIssue creates one consolidated issue for an entire filtered review result. It uses DEFAULT_ISSUE_TITLE for the issue title, renders the full result with renderMarkdownReview, and applies a fixed set of labels.
+// 
+// renderPerFindingIssues creates multiple issues, one per finding in the result. Each issue title includes the finding id and title, the body is built from repository context plus the finding’s severity, impact, confidence, risk, recommendation, and possible fitness function, and labels combine standard tags with any finding-suggested labels. Labels are normalized to lowercase and deduplicated.
+// 
+// Key dependencies include DEFAULT_ISSUE_TITLE from the config schema, IFinding and IReviewResult types from the finding schema, and renderMarkdownReview for generating the consolidated Markdown content.
+// ===End StrongAI Generated Comment===
+
+
 import { DEFAULT_ISSUE_TITLE } from '../schemas/config';
 import { IFinding, IReviewResult } from '../schemas/finding';
 import { renderMarkdownReview } from '../core/markdownRenderer';

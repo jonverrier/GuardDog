@@ -5,7 +5,8 @@
 // Copyright (c) 2025 Jon Verrier
 
 import { expect } from 'expect';
-import { validateReviewResult } from '../../src/core/findingParser';
+import { isEmptyDefaultResult, validateReviewResult } from '../../src/core/findingParser';
+import { DEFAULT_REVIEW_RESULT } from '../../src/schemas/finding';
 import { InvalidOperationError } from '../../src/utils/errors';
 
 const VALID_RAW = {
@@ -27,7 +28,7 @@ const VALID_RAW = {
          impact: 'high',
          confidence: 'medium',
          principle: 'Preserve optionality',
-         evidence: [{ file: 'src/a.ts', observation: 'Cross-layer import' }],
+         evidence: [{ file: 'src/a.ts', directory: '', observation: 'Cross-layer import' }],
          facts: ['Observed import'],
          inferences: ['Boundary violation'],
          risk: 'High change cost',
@@ -64,8 +65,67 @@ describe('findingParser', () => {
       );
    });
 
-   it('marks sampled review from pipeline flag', () => {
-      const result = validateReviewResult(VALID_RAW, '/repo', undefined, true);
-      expect(result.sampledReview).toBe(true);
+   it('marks sampled review from pipeline flag only', () => {
+      const result = validateReviewResult(
+         { ...VALID_RAW, sampledReview: true },
+         '/repo',
+         undefined,
+         false
+      );
+      expect(result.sampledReview).toBe(false);
+   });
+
+   it('normalizes missing design file to empty string', () => {
+      const result = validateReviewResult(VALID_RAW, '/repo', undefined, false);
+      expect(result.designFile).toBe('');
+   });
+
+   it('preserves design file path when provided', () => {
+      const result = validateReviewResult(VALID_RAW, '/repo', 'DESIGN.md', false);
+      expect(result.designFile).toBe('DESIGN.md');
+   });
+
+   it('detects empty fallback via sentinel generatedAt', () => {
+      expect(
+         isEmptyDefaultResult({
+            ...DEFAULT_REVIEW_RESULT,
+            generatedAt: DEFAULT_REVIEW_RESULT.generatedAt
+         })
+      ).toBe(true);
+   });
+
+   it('detects empty fallback when repoPath is empty with zero findings', () => {
+      expect(
+         isEmptyDefaultResult({
+            ...DEFAULT_REVIEW_RESULT,
+            generatedAt: '2026-05-24T12:00:00.000Z'
+         })
+      ).toBe(true);
+   });
+
+   it('allows legitimate zero-finding result with real repo metadata', () => {
+      expect(
+         isEmptyDefaultResult({
+            ...DEFAULT_REVIEW_RESULT,
+            repoPath: '/real/repo',
+            designFile: '',
+            generatedAt: '2026-05-24T12:00:00.000Z'
+         })
+      ).toBe(false);
+   });
+
+   it('rejects evidence items missing required file or directory keys', () => {
+      const invalid = {
+         ...VALID_RAW,
+         findings: [
+            {
+               ...VALID_RAW.findings[0],
+               evidence: [{ observation: 'Missing location keys' }]
+            }
+         ]
+      };
+      expect(() => validateReviewResult(invalid, '/repo', undefined, false)).toThrow(
+         InvalidOperationError
+      );
    });
 });

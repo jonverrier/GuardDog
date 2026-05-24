@@ -51,6 +51,7 @@ describe('findingFilter', () => {
       const result: IReviewResult = {
          tool: 'GuardDog',
          repoPath: '/repo',
+         designFile: '',
          generatedAt: new Date().toISOString(),
          summary: {
             overallRisk: 'high',

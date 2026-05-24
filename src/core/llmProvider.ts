@@ -4,6 +4,11 @@
  */
 // Copyright (c) 2025 Jon Verrier
 
+// ===Start StrongAI Generated Comment (20260524)===
+// This module provides a small LLM provider abstraction used to generate architecture review results. It defines ILlmProvider with a single complete method for returning a model response as a string. The main implementation is PromptRepositoryLlmProvider, which is backed by a PromptRepository and an IChatDriver. It loads the ArchitectureReview prompt by id, expands system and user prompt templates with IReviewPromptParams, and then calls the chat driver for a constrained, schema-validated JSON response. getStructuredReview returns an IReviewResult object and enforces basic validity (including a required tool value). completeFromParams returns the same result as a raw JSON string, while complete is a deprecated compatibility wrapper that maps a plain prompt into minimal params. The provider checks OPENAI_API_KEY and throws InvalidStateError or InvalidOperationError on missing configuration, missing prompts, or invalid output. Key dependencies include ChatDriverFactory, EModel/EModelProvider, EVerbosity, and schema constants like REVIEW_RESULT_JSON_SCHEMA and DEFAULT_REVIEW_RESULT. It also exports createDefaultLlmProvider and re-exports PromptInvalidOperationError.
+// ===End StrongAI Generated Comment===
+
+
 import {
    ChatDriverFactory,
    EModel,
@@ -59,7 +64,8 @@ export class PromptRepositoryLlmProvider implements ILlmProvider {
          architectureIntent: prompt,
          repoMap: '{}',
          contextFilesSection: '',
-         sampledReviewNote: ''
+         sampledReviewNote: '',
+         contextCoverageNote: ''
       });
    }
 
@@ -94,7 +100,10 @@ export class PromptRepositoryLlmProvider implements ILlmProvider {
          userPrompt,
          EVerbosity.kMedium,
          REVIEW_RESULT_JSON_SCHEMA,
-         { ...DEFAULT_REVIEW_RESULT, generatedAt: new Date(0).toISOString() },
+         {
+            ...DEFAULT_REVIEW_RESULT,
+            generatedAt: new Date(0).toISOString()
+         },
          [],
          []
       );

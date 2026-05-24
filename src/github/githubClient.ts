@@ -4,6 +4,11 @@
  */
 // Copyright (c) 2025 Jon Verrier
 
+// ===Start StrongAI Generated Comment (20260524)===
+// This module provides a small GitHub REST API client for turning rendered issue drafts into real GitHub issues, aimed at creating architecture review issues in a repository. The main export is createGitHubIssues(repo, drafts, confirm, logger), which validates the repo string is in owner/name form, supports a dry-run mode that logs each draft’s title, labels, and body, and otherwise creates issues via the GitHub Issues API. When creating issues, it requires a GITHUB_TOKEN environment variable and logs the created issue number and URL, returning an array of results containing number, htmlUrl, and title. Drafts are defined by IIssueDraft from the issueRenderer module (title, body, labels). Logging uses ILogger and defaultLogger from the logger utility. Error handling relies on custom error types from utils/errors: InvalidParameterError for bad input, InvalidStateError for missing token, and ConnectionError for network/API failures, including a fallback that retries without labels when GitHub rejects unknown labels.
+// ===End StrongAI Generated Comment===
+
+
 import { ConnectionError, InvalidParameterError, InvalidStateError } from '../utils/errors';
 import { IIssueDraft } from './issueRenderer';
 import { ILogger, defaultLogger } from '../utils/logger';

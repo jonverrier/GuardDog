@@ -5,6 +5,17 @@
  */
 // Copyright (c) 2025 Jon Verrier
 
+// ===Start StrongAI Generated Comment (20260524)===
+// GuardDog CLI entry point. This module is the executable that parses command-line arguments, prints usage help, and dispatches to subcommands. It reads process.argv, supports --help/-h, and exits with explicit status codes for success or failure.
+// 
+// The main runtime behavior is implemented in the internal async main() function, which selects the first argument as the command name. For the review command, it forwards remaining arguments to runReviewCommand and exits with its returned exit code. For the init command, it forwards arguments to runInitCommand and exits similarly. If the command is unrecognized, it throws an InvalidParameterError.
+// 
+// Error handling is centralized. Known GuardDogError instances are rendered as a user-friendly “Error:” message and terminate with exit code 1. Unexpected errors are rethrown and ultimately caught by the final main().catch handler, which prints a “Fatal:” message and exits 1.
+// 
+// Key dependencies are runReviewCommand and runInitCommand for command implementations, and InvalidParameterError/GuardDogError for consistent error typing and messaging.
+// ===End StrongAI Generated Comment===
+
+
 import { runReviewCommand } from './commands/review';
 import { runInitCommand } from './commands/init';
 import { InvalidParameterError, GuardDogError } from '../utils/errors';
@@ -27,6 +38,13 @@ Review options:
   --repo <owner/name>          GitHub repo target
   --issue-mode single|per-finding
   --model <model-name>         LLM model name
+  --context-token-budget <n>   Source file token budget (default: 32000)
+  --c4-token-budget <n>        C4 doc token budget for review (default: 12000)
+  --design-token-budget <n>    Design file token budget (default: 4000)
+  --ranker-c4-token-budget <n> C4 doc budget for ContextRanker (default: same as c4)
+  --max-file-tokens <n>        Per-file token cap (default: 4096)
+  --component-file <name>      C4 component doc basename
+  --context-file <name>        C4 context doc basename
   --no-github                  Disable GitHub integration
   --confirm                    Confirm GitHub issue creation
 

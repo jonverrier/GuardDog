@@ -8,10 +8,12 @@ import { expect } from 'expect';
 import { renderSingleIssue, renderPerFindingIssues } from '../../src/github/issueRenderer';
 import { createGitHubIssues } from '../../src/github/githubClient';
 import { IReviewResult } from '../../src/schemas/finding';
+import { InvalidStateError } from '../../src/utils/errors';
 
 const SAMPLE_RESULT: IReviewResult = {
    tool: 'GuardDog',
    repoPath: '/repo',
+   designFile: '',
    generatedAt: '2025-05-23T12:00:00.000Z',
    summary: {
       overallRisk: 'medium',
@@ -91,5 +93,20 @@ describe('github issue rendering', () => {
       expect(results).toHaveLength(0);
       expect(logs.some((l) => l.includes('dry-run'))).toBe(true);
       expect(logs.some((l) => l.includes('GuardDog architecture review findings'))).toBe(true);
+   });
+
+   it('throws InvalidStateError when confirm is true and GITHUB_TOKEN is missing', async () => {
+      const previousToken = process.env.GITHUB_TOKEN;
+      delete process.env.GITHUB_TOKEN;
+
+      try {
+         await expect(
+            createGitHubIssues('owner/repo', [renderSingleIssue(SAMPLE_RESULT)], true)
+         ).rejects.toThrow(InvalidStateError);
+      } finally {
+         if (previousToken !== undefined) {
+            process.env.GITHUB_TOKEN = previousToken;
+         }
+      }
    });
 });

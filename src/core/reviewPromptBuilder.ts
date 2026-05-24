@@ -6,18 +6,22 @@
 // Copyright (c) 2025 Jon Verrier
 
 import { IContextFile } from './contextSelector';
+import {
+   buildContextCoverageSummary,
+   formatContextCoveragePromptNote
+} from './contextCoverageNotes';
+import { IContextSelectionMeta } from '../schemas/contextManifest';
 
 const NO_DESIGN_PLACEHOLDER =
    '*No architecture intent file was provided. Report general evolutionary architecture findings only.*';
-
-const SAMPLED_REVIEW_NOTE =
-   '*Note: This is a sampled review — not all files in the repository were included.*';
 
 export interface IReviewPromptParams {
    architectureIntent: string;
    repoMap: string;
    contextFilesSection: string;
+   /** @deprecated Use contextCoverageNote — kept for Prompts.json placeholder name */
    sampledReviewNote: string;
+   contextCoverageNote: string;
 }
 
 /**
@@ -25,19 +29,24 @@ export interface IReviewPromptParams {
  * @param repoMapJson - Serialized repository map
  * @param designContent - Architecture intent content, if available
  * @param contextFiles - Selected file contents
- * @param sampledReview - Whether context was sampled
+ * @param contextSelection - Context selection metadata from the pipeline
  */
 export function buildReviewPromptParams(
    repoMapJson: string,
    designContent: string | undefined,
    contextFiles: IContextFile[],
-   sampledReview: boolean
+   contextSelection: IContextSelectionMeta
 ): IReviewPromptParams {
+   const coverageNote = formatContextCoveragePromptNote(
+      buildContextCoverageSummary(contextSelection)
+   );
+
    return {
       architectureIntent: designContent ?? NO_DESIGN_PLACEHOLDER,
       repoMap: repoMapJson,
       contextFilesSection: buildContextFilesSection(contextFiles),
-      sampledReviewNote: sampledReview ? SAMPLED_REVIEW_NOTE + '\n' : ''
+      sampledReviewNote: coverageNote,
+      contextCoverageNote: coverageNote
    };
 }
 

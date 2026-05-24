@@ -4,6 +4,11 @@
  */
 // Copyright (c) 2025 Jon Verrier
 
+// ===Start StrongAI Generated Comment (20260524)===
+// Implements the `guarddog review` CLI command. It parses command-line arguments, validates required values, resolves the target repository path, runs a repository review, and optionally creates GitHub issues from the review findings. The main export is runReviewCommand(args), which orchestrates argument parsing, calls the reviewer, loads configuration, and prints a final summary and exit code. Internally, parseReviewArgs converts flags into an IReviewCliOptions object and throws InvalidParameterError for missing repoPath, unknown flags, or invalid values. Helper functions requireNext, parseIssueMode, and parsePositiveInt enforce value presence and basic type constraints. Key dependencies are runReview for producing the review result, loadConfig plus parseSeverity/parseImpact for configuration and threshold parsing, resolveRepoPath for filesystem validation, and defaultLogger for consistent logging. For GitHub integration, it uses renderPerFindingIssues or renderSingleIssue to build issue drafts and createGitHubIssues to submit them, honoring issueMode and confirm behavior.
+// ===End StrongAI Generated Comment===
+
+
 import { runReview } from '../../core/reviewer';
 import { loadConfig } from '../../core/configLoader';
 import { parseImpact, parseSeverity } from '../../core/configLoader';
@@ -97,6 +102,33 @@ function parseReviewArgs(args: string[]): { repoPath: string; options: IReviewCl
          case '--confirm':
             options.confirm = true;
             break;
+         case '--context-token-budget':
+            options.contextTokenBudget = parsePositiveInt(requireNext(args, ++i, '--context-token-budget'), '--context-token-budget');
+            break;
+         case '--c4-token-budget':
+            options.c4TokenBudget = parsePositiveInt(requireNext(args, ++i, '--c4-token-budget'), '--c4-token-budget');
+            break;
+         case '--design-token-budget':
+            options.designTokenBudget = parsePositiveInt(
+               requireNext(args, ++i, '--design-token-budget'),
+               '--design-token-budget'
+            );
+            break;
+         case '--ranker-c4-token-budget':
+            options.rankerC4TokenBudget = parsePositiveInt(
+               requireNext(args, ++i, '--ranker-c4-token-budget'),
+               '--ranker-c4-token-budget'
+            );
+            break;
+         case '--max-file-tokens':
+            options.maxFileTokens = parsePositiveInt(requireNext(args, ++i, '--max-file-tokens'), '--max-file-tokens');
+            break;
+         case '--component-file':
+            options.componentFile = requireNext(args, ++i, '--component-file');
+            break;
+         case '--context-file':
+            options.contextFile = requireNext(args, ++i, '--context-file');
+            break;
          default:
             throw new InvalidParameterError(`Unknown option: ${arg}`);
       }
@@ -118,4 +150,12 @@ function parseIssueMode(value: string): IssueMode {
       return value;
    }
    throw new InvalidParameterError(`Invalid issue mode: ${value}. Expected single or per-finding.`);
+}
+
+function parsePositiveInt(value: string, flag: string): number {
+   const parsed = parseInt(value, 10);
+   if (Number.isNaN(parsed) || parsed <= 0) {
+      throw new InvalidParameterError(`${flag} requires a positive integer.`);
+   }
+   return parsed;
 }

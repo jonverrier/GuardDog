@@ -4,6 +4,19 @@
  */
 // Copyright (c) 2025 Jon Verrier
 
+// ===Start StrongAI Generated Comment (20260524)===
+// File system utilities used to scan a repository and safely load file content for tooling and LLM context. The module relies on Node’s fs/promises for async I/O and path for normalization and relative path handling. It also uses minimatch to apply gitignore-style glob patterns, and throws InvalidParameterError when a provided repository path is invalid.
+// 
+// resolveRepoPath normalizes a path, verifies it exists, and ensures it is a directory. readTextFileIfExists reads UTF-8 text and returns undefined when the file is missing, while readTextFile always reads or fails. writeTextFile writes UTF-8 content and creates parent directories automatically.
+// 
+// loadGitignorePatterns parses a .gitignore-like file into patterns, skipping blank lines and comments. isIgnoredPath checks a relative path against built-in ignored directories and provided patterns.
+// 
+// walkFiles recursively collects relative file paths under a root, excluding ignored paths, and returns a sorted list.
+// 
+// readContextFile reads only small, non-binary files and redacts common secret formats via redactSecrets. MAX_FILE_SIZE_BYTES and DEFAULT_IGNORED_DIRS are exported for configuration and reuse.
+// ===End StrongAI Generated Comment===
+
+
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { minimatch } from 'minimatch';
@@ -11,7 +24,7 @@ import { InvalidParameterError } from './errors';
 
 const MAX_FILE_SIZE_BYTES = 256 * 1024;
 const SECRET_PATTERNS: readonly RegExp[] = [
-   /(?:api[_-]?key|secret|password|token|auth)\s*[:=]\s*['"]?[A-Za-z0-9_\-./+=]{8,}/gi,
+   /(?:api[_-]?key|secret|password|token|auth)\s*[:=]\s*(?!process\.env)['"]?[A-Za-z0-9_\-./+=]{8,}/gi,
    /-----BEGIN (?:RSA |EC )?PRIVATE KEY-----/g,
    /sk-[A-Za-z0-9]{20,}/g
 ];
