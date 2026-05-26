@@ -16,7 +16,7 @@ GuardDog is not a style checker or a generic code-smell detector. It asks a diff
 
 ### Maturity and expectations
 
-GuardDog is **useful today**, but it is **not yet ready for fully autonomous “fix until green” loops**. Reviews are LLM-driven and exploratory: if you run the same repo multiple times, you may see **new high-severity items** even after fixing the last batch — not always because of regressions, but because the model surfaces the next layer of issues (and can occasionally misread redacted or partial context). Treating “zero highs” as a release gate without human triage can become an endless loop.
+GuardDog is **useful today**, but it is **not yet ready for fully autonomous “fix until green” loops**. Reviews are LLM-driven and exploratory: if you run the same repo multiple times, you may see **new high-severity items** even after fixing the last batch — not always because of regressions, but because the model surfaces the next layer of issues (and can occasionally misread redacted or partial context). 
 
 On a real **self-review of GuardDog** (same repo, same day), iterative fixes plus prompt calibration produced a clear shift from contract-breaking **highs** to governance **mediums**:
 
@@ -464,4 +464,4 @@ node dist/cli/index.js review . --design DESIGN.md --out review.md
 
 ## License
 
-Copyright (c) 2025 Jon Verrier
+MIT — see [LICENSE](LICENSE).

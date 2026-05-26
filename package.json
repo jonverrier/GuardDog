@@ -2,6 +2,7 @@
   "name": "@jonverrier/guard-dog",
   "version": "0.1.0",
   "description": "CLI tool that reviews a codebase for evolutionary architecture risks",
+  "license": "MIT",
   "private": false,
   "engines": {
     "node": ">=20"
@@ -18,6 +19,7 @@
   },
   "files": [
     "dist/**/*",
+    "LICENSE",
     "README.md"
   ],
   "scripts": {
