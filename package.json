@@ -29,7 +29,7 @@
     "test": "jest --selectProjects unit",
     "test:ci": "jest --selectProjects ci",
     "cover": "jest --selectProjects ci --coverage --coverageReporters=html text lcov",
-    "generate-docs": "c4-auto --dir ./src --files \"*.ts\" \"*.tsx\" --one-month --c4component --c4context --rollup"
+    "generate-docs": "auto-doc --dir ./src --files \"*.ts\" \"*.tsx\" --one-month --c4component --c4context --rollup"
   },
   "dependencies": {
     "@jonverrier/prompt-repository": "^0.3.23",
@@ -37,7 +37,7 @@
     "tiktoken": "^1.0.21"
   },
   "devDependencies": {
-    "@jonverrier/c4-auto": "^0.2.2",
+    "@jonverrier/auto-doc": "^1.0.1",
     "@types/jest": "^29.5.14",
     "@types/node": "^24.0.10",
     "@types/sinon": "^17.0.3",

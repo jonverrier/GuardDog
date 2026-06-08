@@ -6,7 +6,7 @@ Instructions for AI assistants working on the `@jonverrier/guard-dog` package. T
 
 GuardDog is a publishable Node.js CLI that reviews a codebase for **evolutionary architecture** risks. It reads designer intent from `DESIGN.md`, selects context via C4-guided ranking and token budgets, prompts an LLM for structured findings, and optionally opens GitHub issues.
 
-**Peer to C4-Auto** — GuardDog consumes C4 architecture docs when present; it does not invoke C4-Auto.
+**Peer to AutoDoc** — GuardDog consumes C4 architecture docs when present; it does not invoke AutoDoc.
 
 **Product name:** GuardDog. **CLI binary:** `guarddog`. **Config dir:** `.guarddog/`.
 
@@ -91,4 +91,4 @@ npm pack --dry-run       # verify dist-only tarball
 ## Related Packages
 
 - **PromptRepository** (`@jonverrier/prompt-repository`) — LLM drivers and prompt expansion.
-- **C4-Auto** (`@jonverrier/c4-auto`) — generates C4 docs that GuardDog consumes for context ranking.
+- **AutoDoc** (`@jonverrier/auto-doc`) — generates C4 docs that GuardDog consumes for context ranking.

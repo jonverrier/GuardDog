@@ -37,33 +37,33 @@ GuardDog rests on four ideas:
 
 System designers write a document — typically `DESIGN.md` — that explains how they want the system to be structured: layers, encapsulation, extension points, allowed dependencies, deployment boundaries, and so on. This is the **architectural contract**. GuardDog uses it to distinguish findings that drift from declared intent from general evolutionary-architecture observations.
 
-### 2. C4-Auto docs guide what code to read
+### 2. AutoDoc docs guide what code to read
 
 GuardDog does not send the whole repository to the LLM. Instead it uses a **two-stage context pipeline**:
 
 1. **Rank** — decide which source files matter most for architecture review
 2. **Pack** — read file contents into token budgets until full (counted with **tiktoken**)
 
-When [C4-Auto](https://github.com/jonverrier/C4-Auto) has generated architecture docs (`README.StrongAI.Component.md`, `README.StrongAI.Context.md`, or custom basenames via `--component-file` / `--context-file`), GuardDog runs a **ContextRanker** LLM pass. The ranker reads your C4 diagrams, design intent, and a lightweight file index (path, extension, size — not full source), then returns an ordered list of the most architecturally important source files: boundary hotspots, entry points, persistence seams, and modules named in C4 diagrams.
+When [AutoDoc](https://github.com/jonverrier/AutoDoc) has generated architecture docs (`README.StrongAI.Component.md`, `README.StrongAI.Context.md`, or custom basenames via `--component-file` / `--context-file`), GuardDog runs a **ContextRanker** LLM pass. The ranker reads your C4 diagrams, design intent, and a lightweight file index (path, extension, size — not full source), then returns an ordered list of the most architecturally important source files: boundary hotspots, entry points, persistence seams, and modules named in C4 diagrams.
 
 If no C4 docs exist, GuardDog falls back to **heuristic ranking** (config, CI, package manifests, sampled source directories).
 
 Recommended workflow:
 
 ```bash
-# Step 1: generate C4 architecture docs (C4-Auto)
-c4-auto --dir ./src --c4component --c4context --rollup
+# Step 1: generate C4 architecture docs (AutoDoc)
+auto-doc --dir ./src --c4component --c4context --rollup
 
 # Step 2: review with GuardDog
 guarddog review . --design DESIGN.md --out review.md --json review.json
 ```
 
-GuardDog consumes existing C4 files; it does not invoke C4-Auto itself.
+GuardDog consumes existing C4 files; it does not invoke AutoDoc itself.
 
 ```mermaid
 flowchart TD
    design[DESIGN.md]
-   c4[C4-Auto docs]
+   c4[AutoDoc docs]
    scan[Repo scan + file index]
    rank{C4 docs found?}
    llmRank[ContextRanker LLM]
@@ -283,11 +283,11 @@ Initialize configuration in a repository:
 guarddog init
 ```
 
-Run an architecture review (run [C4-Auto](https://github.com/jonverrier/C4-Auto) first for best results):
+Run an architecture review (run [AutoDoc](https://github.com/jonverrier/AutoDoc) first for best results):
 
 ```bash
 # Optional: generate C4 architecture docs first
-c4-auto --dir ./src --c4component --c4context --rollup
+auto-doc --dir ./src --c4component --c4context --rollup
 
 guarddog review . \
   --design ./DESIGN.md \
@@ -374,7 +374,7 @@ GuardDog's context pipeline is the bridge between a large codebase and a bounded
 
 | Mode | When | How |
 |------|------|-----|
-| `c4-llm` | C4-Auto docs found in repo | ContextRanker prompt reads C4 docs + design + file index; returns ranked paths |
+| `c4-llm` | AutoDoc docs found in repo | ContextRanker prompt reads C4 docs + design + file index; returns ranked paths |
 | `heuristic` | No C4 docs, or ranker fails | Config, CI, manifests, and sampled source/test files by directory |
 
 ### Token budgets

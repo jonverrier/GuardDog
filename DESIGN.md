@@ -16,12 +16,12 @@ GuardDog is a standalone Node.js CLI (`guarddog`) that:
 4. Prompts an LLM to produce **structured findings** (severity, evidence, blast radius, incremental remediation).
 5. Optionally renders Markdown/JSON output and opens GitHub issues.
 
-GuardDog is **not** a linter, style checker, or C4 generator. It consumes C4-Auto output when present; it does not invoke C4-Auto.
+GuardDog is **not** a linter, style checker, or C4 generator. It consumes AutoDoc output when present; it does not invoke AutoDoc.
 
 Primary user workflow:
 
 ```text
-c4-auto …          # optional: generate C4 docs in target repo
+auto-doc …          # optional: generate C4 docs in target repo
 guarddog review …  # rank → pack → review → report
 ```
 
@@ -73,7 +73,7 @@ GuardDog follows a thin CLI over a deterministic core pipeline. Dependencies flo
 ### External integration boundaries
 
 - **PromptRepository** — all LLM access goes through `IChatDriver` + `IPromptRepository`. No raw OpenAI SDK calls in GuardDog.
-- **C4-Auto** — integration is **file-based only**. GuardDog detects C4 markdown by basename/suffix; no subprocess or npm import of C4-Auto.
+- **AutoDoc** — integration is **file-based only**. GuardDog detects C4 markdown by basename/suffix; no subprocess or npm import of AutoDoc.
 - **Target repositories** — read-only scan except for configured outputs (`.guarddog/`, review files, optional GitHub issues).
 
 ---
@@ -182,7 +182,7 @@ These rules must not break during evolution:
 
 7. **Gitignore respected.** Repository walks honour `.gitignore` patterns via `utils/fileSystem.ts`.
 
-8. **No monorepo coupling.** GuardDog must remain installable and runnable without the StrongAI workspace. Peer relationship to C4-Auto is documented, not wired.
+8. **No monorepo coupling.** GuardDog must remain installable and runnable without the StrongAI workspace. Peer relationship to AutoDoc is documented, not wired.
 
 ---
 
@@ -262,5 +262,5 @@ Document these when changing related code:
 
 - `README.md` — user-facing origin story, workflow, and prompt reference.
 - `AGENTS.md` — instructions for AI assistants working in this repo.
-- [C4-Auto](https://github.com/jonverrier/C4-Auto) — generates architecture docs GuardDog consumes.
+- [AutoDoc](https://github.com/jonverrier/AutoDoc) — generates architecture docs GuardDog consumes.
 - [PromptRepository](https://github.com/jonverrier/PromptRepository) — LLM drivers and prompt expansion.
