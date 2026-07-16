@@ -29,9 +29,11 @@
     "test": "jest --selectProjects unit",
     "test:ci": "jest --selectProjects ci",
     "cover": "jest --selectProjects ci --coverage --coverageReporters=html text lcov",
-    "generate-docs": "auto-doc --dir ./src --files \"*.ts\" \"*.tsx\" --one-month --c4component --c4context --rollup"
+    "generate-docs": "auto-doc --dir ./src --files \"*.ts\" \"*.tsx\" --one-month --c4component --c4context --rollup",
+    "review:strongai-platforms": "node dist/cli/index.js review-strongai-platforms"
   },
   "dependencies": {
+    "@cursor/sdk": "^1.0.23",
     "@jonverrier/prompt-repository": "^0.3.23",
     "minimatch": "^10.0.1",
     "tiktoken": "^1.0.21"

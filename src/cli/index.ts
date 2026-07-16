@@ -18,12 +18,14 @@
 
 import { runReviewCommand } from './commands/review';
 import { runInitCommand } from './commands/init';
+import { runReviewStrongAiPlatformsCommand } from './commands/reviewStrongAiPlatforms';
 import { InvalidParameterError, GuardDogError } from '../utils/errors';
 
 const USAGE = `GuardDog — Architecture Review CLI
 
 Usage:
   guarddog review <repoPath> [options]
+  guarddog review-strongai-platforms [options]
   guarddog init [repoPath]
 
 Review options:
@@ -48,9 +50,25 @@ Review options:
   --no-github                  Disable GitHub integration
   --confirm                    Confirm GitHub issue creation
 
+StrongAI platform cloud review options:
+  --dry-run                    Write drafts under .guarddog/strongai-issue-drafts (no StrongAI/issues write, no sync)
+  --sync                       After writing issues/, invoke StrongAI sync-issues-to-github.sh
+  --confirm                    With --sync, actually create GitHub issues (otherwise print the sync command)
+  --strongai-path <path>       Local StrongAI monorepo root (default: STRONGAI_PATH or ../StrongAI)
+  --out-dir <path>             Override issue draft output directory
+  --packages <ids>             Comma list: platform,platform-client,platform-server
+  --model <model-name>         Cursor cloud model (default: composer-2.5)
+  --strongai-repo-url <url>    StrongAI git URL for cloud clone
+  --guarddog-repo-url <url>    GuardDog git URL for cloud clone
+  --strongai-ref <ref>         StrongAI starting ref (default: develop)
+  --guarddog-ref <ref>         GuardDog starting ref (default: main)
+  --prefer-local-issue-render  Rebuild issues/*.md locally from reviewJson when present
+
 Examples:
   guarddog review . --design DESIGN.md --out review.md --json review.json
   guarddog review . --design DESIGN.md --github-issue --repo owner/repo --confirm
+  guarddog review-strongai-platforms --dry-run
+  guarddog review-strongai-platforms --sync --confirm
   guarddog init
 `;
 
@@ -66,6 +84,10 @@ async function main(): Promise<void> {
    try {
       if (command === 'review') {
          const exitCode = await runReviewCommand(args.slice(1));
+         process.exit(exitCode);
+      }
+      if (command === 'review-strongai-platforms') {
+         const exitCode = await runReviewStrongAiPlatformsCommand(args.slice(1));
          process.exit(exitCode);
       }
       if (command === 'init') {

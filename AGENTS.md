@@ -24,7 +24,8 @@ Prompts live in `src/Prompts.json` (copied to `dist/` on build). Prompt wording 
 
 ```text
 src/
-  cli/                      Entry (bin: guarddog) — review, init
+  cli/                      Entry (bin: guarddog) — review, review-strongai-platforms, init
+  strongai/                 StrongAI cloud review orchestration + issue drafting/sync
   core/
     reviewer.ts             Orchestrates the review pipeline
     contextSelector.ts      Rank → pack orchestration
@@ -33,7 +34,7 @@ src/
     c4ArchitectureDocs.ts   C4 file discovery
     repoScanner.ts          Repo walk and file index
     findingParser.ts        Structured finding extraction
-  schemas/                  Config, repo map, context manifest, findings
+  schemas/                  Config, repo map, context manifest, findings, StrongAI targets
   github/                   Optional issue creation
   PromptIds.ts              Prompt UUID constants
   Prompts.json              In-memory prompt templates
@@ -65,7 +66,10 @@ npm install              # needs NODE_AUTH_TOKEN for @jonverrier/prompt-reposito
 npm run build            # rimraf dist && tsc && copy Prompts.json
 npm run test:ci          # unit tests; no OPENAI_API_KEY
 npm pack --dry-run       # verify dist-only tarball
+npm run review:strongai-platforms -- --dry-run   # needs CURSOR_API_KEY + OPENAI_API_KEY
 ```
+
+**StrongAI cloud reviews:** `guarddog review-strongai-platforms` launches one Cursor cloud agent per platform package, writes StrongAI `issues/*.md` drafts, and can invoke `tools/build/scripts/sync-issues-to-github.sh` with `--sync --confirm`. See README § StrongAI platform cloud reviews.
 
 **Branch policy:** work on `develop`; merge to `main` for release.
 

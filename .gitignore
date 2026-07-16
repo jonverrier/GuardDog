@@ -4,3 +4,4 @@ coverage/
 *.log
 .env
 .guarddog/guarddog-debug-*.json
+.guarddog/strongai-issue-drafts/

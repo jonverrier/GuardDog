@@ -366,6 +366,71 @@ Requires `GITHUB_TOKEN`. Without `--confirm`, issue title and body are printed o
 
 ---
 
+## StrongAI platform cloud reviews
+
+Launch **one Cursor cloud agent per platform package** (`platform`, `platform-client`, `platform-server`), run GuardDog against that package's `DESIGN.md`, then write **one StrongAI inbox issue per package** and optionally sync those files to real GitHub issues.
+
+```bash
+# 1) Dry-run: cloud reviews + local drafts under .guarddog/strongai-issue-drafts/
+export CURSOR_API_KEY=cursor_...
+export OPENAI_API_KEY=sk-...
+# Optional: private npm auth for GuardDog deps inside the cloud VM
+export NODE_AUTH_TOKEN=${GITHUB_TOKEN}
+
+npm run build
+npm run review:strongai-platforms -- --dry-run
+
+# Or via the CLI directly:
+node dist/cli/index.js review-strongai-platforms --dry-run
+
+# 2) Write into the local StrongAI issues/ inbox (no GitHub yet)
+node dist/cli/index.js review-strongai-platforms \
+  --strongai-path ../StrongAI
+
+# 3) After reviewing the markdown, create real GitHub issues and backfill **GitHub:** links
+node dist/cli/index.js review-strongai-platforms \
+  --strongai-path ../StrongAI \
+  --sync --confirm
+```
+
+Issue filenames (Stable):
+
+| Package | Local issue file |
+|---------|------------------|
+| `packages/platform` | `issues/guarddog-platform-architecture-review.md` |
+| `packages/platform-client` | `issues/guarddog-platform-client-architecture-review.md` |
+| `packages/platform-server` | `issues/guarddog-platform-server-architecture-review.md` |
+
+`--sync --confirm` invokes StrongAI's existing script:
+
+```bash
+cd ../StrongAI/tools/build
+./scripts/sync-issues-to-github.sh
+```
+
+That script creates GitHub issues on `jonverrier/StrongAI` and writes `**GitHub:** jonverrier/StrongAI#NNN` back into each markdown file. Prefer this path over GuardDog's built-in `--github-issue` so the StrongAI `issues/` inbox remains source of truth.
+
+### Cloud review options
+
+| Option | Description |
+|--------|-------------|
+| `--dry-run` | Write drafts under `.guarddog/strongai-issue-drafts/` (skip StrongAI/issues and sync) |
+| `--sync` | After writing `issues/`, run StrongAI `sync-issues-to-github.sh` |
+| `--confirm` | With `--sync`, actually create GitHub issues (otherwise print the sync command only) |
+| `--strongai-path <path>` | Local StrongAI monorepo root (default: `STRONGAI_PATH` or `../StrongAI`) |
+| `--out-dir <path>` | Override issue draft output directory |
+| `--packages <ids>` | Comma list: `platform`, `platform-client`, `platform-server` |
+| `--model <id>` | Cursor cloud model (default: `composer-2.5`) |
+| `--strongai-repo-url <url>` | StrongAI git URL for the cloud clone |
+| `--guarddog-repo-url <url>` | GuardDog git URL for the cloud clone |
+| `--strongai-ref <ref>` | StrongAI starting ref (default: `develop`) |
+| `--guarddog-ref <ref>` | GuardDog starting ref (default: `main`) |
+| `--prefer-local-issue-render` | Rebuild `issues/*.md` locally from `reviewJson` when the agent returns it |
+
+Each cloud agent clones **StrongAI + GuardDog**, builds GuardDog, reviews only its assigned package path, and returns a structured JSON payload (also written as `guarddog-strongai-payload.json` when possible). The local runner validates StrongAI headers (`Status`, `Type`, `GitHub`, `Superseded by`) before writing files.
+
+---
+
 ## Context selection
 
 GuardDog's context pipeline is the bridge between a large codebase and a bounded LLM prompt. It answers: *given what we know about this system's architecture, which files should the reviewer actually read?*
@@ -439,9 +504,12 @@ When `truncation.budgetExhausted` is true, the review output notes a **sampled r
 
 | Variable | Purpose |
 |----------|---------|
-| `OPENAI_API_KEY` | Required for LLM review |
-| `OPENAI_MODEL` | Optional model override |
-| `GITHUB_TOKEN` | Required for confirmed GitHub issue creation |
+| `OPENAI_API_KEY` | Required for LLM review (local `guarddog review` and cloud StrongAI platform reviews) |
+| `OPENAI_MODEL` | Optional model override for GuardDog's LLM provider |
+| `CURSOR_API_KEY` | Required for `review-strongai-platforms` cloud agents ([Dashboard → Integrations](https://cursor.com/dashboard/integrations)) |
+| `STRONGAI_PATH` | Optional local StrongAI monorepo root for writing `issues/*.md` |
+| `GITHUB_TOKEN` | Required for confirmed GitHub issue creation / StrongAI issue sync (`gh`) |
+| `NODE_AUTH_TOKEN` | Optional; passed into cloud VMs for GitHub Packages (`@jonverrier/*`) installs |
 | `GUARDDOG_DEBUG` | Set to `1` for debug logging |
 
 ---
