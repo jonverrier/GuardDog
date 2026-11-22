@@ -19,13 +19,14 @@
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { constants } from 'fs';
 import { minimatch } from 'minimatch';
 import { InvalidParameterError } from './errors';
 
 const MAX_FILE_SIZE_BYTES = 256 * 1024;
 const SECRET_PATTERNS: readonly RegExp[] = [
    /(?:api[_-]?key|secret|password|token|auth)\s*[:=]\s*(?!process\.env)['"]?[A-Za-z0-9_\-./+=]{8,}/gi,
-   /-----BEGIN (?:RSA |EC )?PRIVATE KEY-----/g,
+   /-----BEGIN (?:OPENSSH |RSA |EC |ENCRYPTED )?PRIVATE KEY-----[\s\S]*?-----END (?:OPENSSH |RSA |EC |ENCRYPTED )?PRIVATE KEY-----/g,
    /sk-[A-Za-z0-9]{20,}/g
 ];
 
@@ -168,6 +169,55 @@ export async function walkFiles(rootPath: string, gitignorePatterns: string[]): 
 }
 
 /**
+ * Resolve a repository-controlled path. Reject traversal, absolute paths and
+ * symlinks (including symlinked parent directories) before accessing it.
+ */
+export async function resolveContainedRepoFile(rootPath: string, relativePath: string): Promise<string> {
+   if (!relativePath || path.isAbsolute(relativePath) || path.win32.isAbsolute(relativePath)) {
+      throw new InvalidParameterError('Repository file path must be relative');
+   }
+   const root = await fs.realpath(rootPath);
+   const candidate = path.resolve(root, relativePath);
+   const rel = path.relative(root, candidate);
+   if (!rel || rel === '..' || rel.startsWith('..' + path.sep) || path.isAbsolute(rel)) {
+      throw new InvalidParameterError('Repository file path escapes the repository');
+   }
+   // Reject symlinks at every existing component; do not trust a lexical check alone.
+   let current = root;
+   for (const part of rel.split(path.sep)) {
+      current = path.join(current, part);
+      try {
+         const stat = await fs.lstat(current);
+         if (stat.isSymbolicLink()) {
+            throw new InvalidParameterError('Symlink in repository file path is forbidden');
+         }
+      } catch (error) {
+         if ((error as NodeJS.ErrnoException).code === 'ENOENT') break;
+         throw error;
+      }
+   }
+   return candidate;
+}
+
+/** Read an existing repository file without following a final-component symlink. */
+export async function readContainedRepoFile(rootPath: string, relativePath: string): Promise<string | undefined> {
+   const filename = await resolveContainedRepoFile(rootPath, relativePath);
+   try {
+      const handle = await fs.open(filename, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
+      try {
+         const stat = await handle.stat();
+         if (!stat.isFile() || stat.size > MAX_FILE_SIZE_BYTES) return undefined;
+         return await handle.readFile({ encoding: 'utf8' });
+      } finally {
+         await handle.close();
+      }
+   } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined;
+      throw error;
+   }
+}
+
+/**
  * Reads a bounded text file for LLM context, redacting obvious secrets.
  * @param rootPath - Repository root
  * @param relativePath - Relative file path
@@ -176,23 +226,8 @@ export async function readContextFile(
    rootPath: string,
    relativePath: string
 ): Promise<string | undefined> {
-   const fullPath = path.join(rootPath, relativePath);
-   let stat;
-   try {
-      stat = await fs.stat(fullPath);
-   } catch {
-      return undefined;
-   }
-   if (!stat.isFile() || stat.size > MAX_FILE_SIZE_BYTES) {
-      return undefined;
-   }
-   const content = await readTextFileIfExists(fullPath);
-   if (!content) {
-      return undefined;
-   }
-   if (content.includes('\0')) {
-      return undefined;
-   }
+   const content = await readContainedRepoFile(rootPath, relativePath);
+   if (!content || content.includes('\\0')) return undefined;
    return redactSecrets(content);
 }
 
