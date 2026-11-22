@@ -66,7 +66,7 @@ npm install              # needs NODE_AUTH_TOKEN for @jonverrier/prompt-reposito
 npm run build            # rimraf dist && tsc && copy Prompts.json
 npm run test:ci          # unit tests; no OPENAI_API_KEY
 npm pack --dry-run       # verify dist-only tarball
-npm run review:strongai-platforms -- --dry-run   # needs CURSOR_API_KEY + OPENAI_API_KEY
+npm run review:strongai-platforms -- --dry-run   # plan only; does not launch cloud agents
 ```
 
 **StrongAI cloud reviews:** `guarddog review-strongai-platforms` launches one Cursor cloud agent per platform package, writes StrongAI `issues/*.md` drafts, and can invoke `tools/build/scripts/sync-issues-to-github.sh` with `--sync --confirm`. See README § StrongAI platform cloud reviews.

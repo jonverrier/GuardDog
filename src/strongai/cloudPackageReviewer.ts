@@ -176,7 +176,7 @@ function buildCloudAgentPrompt(target: IStrongAiPlatformTarget): string {
       '',
       '## Task',
       `1. In the GuardDog clone: npm install && npm run build`,
-      '   - If private @jonverrier packages need auth, NODE_AUTH_TOKEN / OPENAI_API_KEY are already in the environment.',
+      '   - Private @jonverrier packages install only when NODE_AUTH_TOKEN is already set in the environment.',
       `2. Run GuardDog against ONLY this package path inside StrongAI:`,
       '```bash',
       `node <guarddog>/dist/cli/index.js review <strongai>/${target.packagePath} \\`,

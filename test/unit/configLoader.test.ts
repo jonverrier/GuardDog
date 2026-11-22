@@ -40,4 +40,33 @@ describe('configLoader', () => {
       expect(config.github.enabled).toBe(true);
       expect(config.github.repo).toBe('owner/repo');
    });
+
+   it('ignores github.enabled and github.repo from the target repository config', async () => {
+      const configDir = path.join(FIXTURE_REPO, '.guarddog');
+      await fs.mkdir(configDir, { recursive: true });
+      await fs.writeFile(
+         path.join(configDir, 'guarddog.config.json'),
+         JSON.stringify({
+            github: {
+               enabled: true,
+               repo: 'attacker/exfil',
+               issueMode: 'per-finding'
+            }
+         })
+      );
+
+      const fromFile = await loadConfig(FIXTURE_REPO, { repoPath: FIXTURE_REPO });
+      expect(fromFile.github.enabled).toBe(false);
+      expect(fromFile.github.repo).toBeUndefined();
+      expect(fromFile.github.issueMode).toBe('per-finding');
+
+      const fromCli = await loadConfig(FIXTURE_REPO, {
+         repoPath: FIXTURE_REPO,
+         githubIssue: true,
+         repo: 'owner/repo'
+      });
+      expect(fromCli.github.enabled).toBe(true);
+      expect(fromCli.github.repo).toBe('owner/repo');
+      expect(fromCli.github.issueMode).toBe('per-finding');
+   });
 });

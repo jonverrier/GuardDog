@@ -9,7 +9,6 @@
 // ===End StrongAI Generated Comment===
 
 
-import * as path from 'path';
 import { loadConfig } from './configLoader';
 import { loadDesignFile } from './designLoader';
 import { generateRepoMap } from './repoScanner';
@@ -22,7 +21,7 @@ import { buildContextCoverageSummary } from './contextCoverageNotes';
 import { buildReviewPromptParams } from './reviewPromptBuilder';
 import { IReviewCliOptions } from '../schemas/config';
 import { IReviewResult } from '../schemas/finding';
-import { resolveRepoPath, writeTextFile } from '../utils/fileSystem';
+import { resolveRepoPath, writeContainedRepoFile, resolveContainedRepoFile } from '../utils/fileSystem';
 import { ILogger, defaultLogger } from '../utils/logger';
 import { InvalidOperationError } from '../utils/errors';
 
@@ -45,6 +44,11 @@ export async function runReview(
 ): Promise<IReviewRunResult> {
    const repoPath = await resolveRepoPath(cliOptions.repoPath);
    const config = await loadConfig(repoPath, cliOptions);
+   const markdownPath = await resolveContainedRepoFile(repoPath, config.outputMarkdown);
+   let jsonPath: string | undefined;
+   if (config.outputJson) {
+      jsonPath = await resolveContainedRepoFile(repoPath, config.outputJson);
+   }
 
    const c4Options = {
       componentFile: config.componentFile,
@@ -112,24 +116,17 @@ export async function runReview(
    );
 
    const markdown = renderMarkdownReview(validated);
-   const markdownPath = path.isAbsolute(config.outputMarkdown)
-      ? config.outputMarkdown
-      : path.join(repoPath, config.outputMarkdown);
 
    if (!cliOptions.dryRun) {
-      await writeTextFile(markdownPath, markdown);
+      await writeContainedRepoFile(repoPath, config.outputMarkdown, markdown);
       logger.info(`Markdown review written to ${markdownPath}`);
    } else {
       logger.info(`[dry-run] Would write Markdown to ${markdownPath}`);
    }
 
-   let jsonPath: string | undefined;
-   if (config.outputJson) {
-      jsonPath = path.isAbsolute(config.outputJson)
-         ? config.outputJson
-         : path.join(repoPath, config.outputJson);
+   if (config.outputJson && jsonPath) {
       if (!cliOptions.dryRun) {
-         await writeTextFile(jsonPath, JSON.stringify(validated, null, 2));
+         await writeContainedRepoFile(repoPath, config.outputJson, JSON.stringify(validated, null, 2));
          logger.info(`JSON review written to ${jsonPath}`);
       } else {
          logger.info(`[dry-run] Would write JSON to ${jsonPath}`);

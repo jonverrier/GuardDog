@@ -50,6 +50,16 @@ export async function runReviewStrongAiPlatformsCommand(args: string[]): Promise
    const strongAiRoot = resolveStrongAiRoot(options.strongAiPath, guardDogRoot);
    const targets = resolveTargets(options.packages);
 
+   if (options.dryRun) {
+      defaultLogger.info(
+         `[dry-run] Would launch cloud agents for ${targets.map((t) => t.id).join(', ')} against StrongAI at ${strongAiRoot}.`
+      );
+      defaultLogger.info(
+         '[dry-run] Cloud agents are not started. No tokens are sent and no issue drafts are written.'
+      );
+      return 0;
+   }
+
    const apiKey = process.env.CURSOR_API_KEY?.trim() ?? '';
    const openAiApiKey = process.env.OPENAI_API_KEY?.trim() ?? '';
    if (!apiKey) {
@@ -73,20 +83,17 @@ export async function runReviewStrongAiPlatformsCommand(args: string[]): Promise
          guardDogRepoUrl: options.guardDogRepoUrl,
          strongAiStartingRef: options.strongAiStartingRef,
          guardDogStartingRef: options.guardDogStartingRef,
-         nodeAuthToken: process.env.NODE_AUTH_TOKEN?.trim() || process.env.GITHUB_TOKEN?.trim(),
+         nodeAuthToken: readNodeAuthToken(),
          preferLocalIssueRender: options.preferLocalIssueRender
       },
       defaultLogger
    );
 
-   const outputDir = resolveOutputDir(options, strongAiRoot, guardDogRoot);
+   const outputDir = resolveOutputDir(options, strongAiRoot);
    const writeResult = await writeStrongAiIssueDrafts(
       {
          drafts,
          outputDir,
-         // Always write draft files unless the caller asked for a pure command dry-run
-         // that only reports intent. Here dry-run means "do not sync to GitHub" and
-         // write under a GuardDog output folder instead of StrongAI/issues.
          dryRun: false
       },
       defaultLogger
@@ -98,9 +105,9 @@ export async function runReviewStrongAiPlatformsCommand(args: string[]): Promise
    }
 
    if (options.sync) {
-      if (options.dryRun || outputDir !== resolveStrongAiIssuesDir(strongAiRoot)) {
+      if (outputDir !== resolveStrongAiIssuesDir(strongAiRoot)) {
          defaultLogger.info(
-            'Skipping GitHub sync because dry-run output is not StrongAI/issues. Re-run without --dry-run and with --sync --confirm.'
+            'Skipping GitHub sync because output is not StrongAI/issues. Re-run without --out-dir and with --sync --confirm.'
          );
       } else {
          await syncStrongAiIssuesToGitHub(
@@ -120,16 +127,21 @@ export async function runReviewStrongAiPlatformsCommand(args: string[]): Promise
    return 0;
 }
 
+/**
+ * Package-install token for the cloud VM.
+ * `GITHUB_TOKEN` is not copied: it is a publish credential, not an npm token for a remote agent.
+ */
+function readNodeAuthToken(): string | undefined {
+   const token = process.env.NODE_AUTH_TOKEN?.trim();
+   return token ? token : undefined;
+}
+
 function resolveOutputDir(
    options: IReviewStrongAiPlatformsCliOptions,
-   strongAiRoot: string,
-   guardDogRoot: string
+   strongAiRoot: string
 ): string {
    if (options.outDir) {
       return path.resolve(options.outDir);
-   }
-   if (options.dryRun) {
-      return path.join(guardDogRoot, '.guarddog', 'strongai-issue-drafts');
    }
    return resolveStrongAiIssuesDir(strongAiRoot);
 }

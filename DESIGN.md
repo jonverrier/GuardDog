@@ -178,11 +178,15 @@ These rules must not break during evolution:
 
 5. **Sampled reviews are visible.** Set `sampledReview: true` only when the **source** layer skips ranked files (`truncation.source`). C4 or design discards are reported in `contextCoverage` and `layerPack` without marking a sampled review. Always log and render whether ranking was **C4-guided** vs **heuristic** separately from discards.
 
-6. **Read-only target scan.** Do not modify source files in the repository under review. Side effects are limited to configured outputs and optional GitHub issues.
+6. **Read-only target scan.** Do not modify source files in the repository under review. Side effects are limited to report files inside the repository and GitHub issues requested on the CLI.
 
-7. **Gitignore respected.** Repository walks honour `.gitignore` patterns via `utils/fileSystem.ts`.
+7. **Repository path confinement.** Design files, context reads, and Markdown/JSON reports stay inside the repository root. Reject absolute paths, parent traversal, and symlinks. Redact private-key blocks and other obvious secrets before that text is sent to an LLM.
 
-8. **No monorepo coupling.** GuardDog must remain installable and runnable without the StrongAI workspace. Peer relationship to AutoDoc is documented, not wired.
+8. **Untrusted repo config cannot publish.** `github.enabled` and `github.repo` in the target config do not create issues or choose a repository. Cloud review forwards `NODE_AUTH_TOKEN` only when that variable is set, and `--dry-run` does not launch cloud agents.
+
+9. **Gitignore respected.** Repository walks honour `.gitignore` patterns via `utils/fileSystem.ts`.
+
+10. **No monorepo coupling.** GuardDog must remain installable and runnable without the StrongAI workspace. Peer relationship to AutoDoc is documented, not wired.
 
 ---
 
