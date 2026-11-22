@@ -41,11 +41,18 @@ describe('repository path confinement', () => {
       expect(await readContextFile(repo, 'DESIGN.md')).not.toContain('FAKE_PRIVATE_KEY_MATERIAL');
    });
 
-   test('refuses outside and existing report destinations', async () => {
+   test('refuses outside report destinations and safely replaces existing reports', async () => {
       await expect(resolveContainedRepoFile(repo, '../outside.md')).rejects.toThrow();
       await expect(writeContainedRepoFile(repo, '../outside.md', 'data')).rejects.toThrow();
-      await expect(writeContainedRepoFile(repo, 'DESIGN.md', 'data')).rejects.toThrow();
-      expect(await fs.readFile(path.join(repo, 'DESIGN.md'), 'utf8')).toBe('safe design');
+      await writeContainedRepoFile(repo, 'DESIGN.md', 'updated');
+      expect(await fs.readFile(path.join(repo, 'DESIGN.md'), 'utf8')).toBe('updated');
+   });
+
+   test('replaces a symlink destination without changing its target', async () => {
+      await fs.symlink(path.join(parent, 'private.txt'), path.join(repo, 'report.md'));
+      // The strict path guard rejects symlinks rather than replacing them.
+      await expect(writeContainedRepoFile(repo, 'report.md', 'result')).rejects.toThrow();
+      expect(await fs.readFile(path.join(parent, 'private.txt'), 'utf8')).toBe('HOST_SECRET');
    });
 
    test('writes new reports with restrictive permissions', async () => {
