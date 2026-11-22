@@ -18,8 +18,11 @@ import { FindingImpact, FindingSeverity } from './finding';
 export type IssueMode = 'single' | 'per-finding';
 
 export interface IGuardDogGithubConfig {
+   /** True only when the CLI passes `--github-issue`. A target repo config cannot enable this. */
    enabled: boolean;
+   /** May be set in the target repo config, or overridden with `--issue-mode`. */
    issueMode: IssueMode;
+   /** Set only from the CLI `--repo` flag. A target repo config cannot choose the destination. */
    repo?: string;
 }
 

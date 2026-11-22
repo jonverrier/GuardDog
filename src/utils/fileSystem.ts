@@ -17,15 +17,19 @@
 // ===End StrongAI Generated Comment===
 
 
+import { randomBytes } from 'crypto';
+import { constants } from 'fs';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { minimatch } from 'minimatch';
 import { InvalidParameterError } from './errors';
 
 const MAX_FILE_SIZE_BYTES = 256 * 1024;
+const REPORT_FILE_MODE = 0o600;
+const TEMP_FILE_RANDOM_BYTES = 12;
 const SECRET_PATTERNS: readonly RegExp[] = [
    /(?:api[_-]?key|secret|password|token|auth)\s*[:=]\s*(?!process\.env)['"]?[A-Za-z0-9_\-./+=]{8,}/gi,
-   /-----BEGIN (?:RSA |EC )?PRIVATE KEY-----/g,
+   /-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z0-9 ]*PRIVATE KEY-----|$)/g,
    /sk-[A-Za-z0-9]{20,}/g
 ];
 
@@ -168,6 +172,135 @@ export async function walkFiles(rootPath: string, gitignorePatterns: string[]): 
 }
 
 /**
+ * Resolves a repository-controlled path.
+ * Rejects absolute paths, parent traversal, NUL bytes, and symlinks, including symlinked parents.
+ * @param rootPath - Repository root
+ * @param relativePath - Path relative to the repository root
+ * @returns Absolute path inside the repository
+ */
+export async function resolveContainedRepoFile(rootPath: string, relativePath: string): Promise<string> {
+   if (!relativePath || relativePath.includes('\0') || isAbsoluteInputPath(relativePath)) {
+      throw new InvalidParameterError('Repository file path must be relative');
+   }
+   const root = await fs.realpath(rootPath);
+   const candidate = path.resolve(root, relativePath);
+   const rel = path.relative(root, candidate);
+   if (rel.length === 0 || relativeEscapesRoot(rel)) {
+      throw new InvalidParameterError('Repository file path escapes the repository');
+   }
+   let current = root;
+   for (const part of rel.split(path.sep)) {
+      current = path.join(current, part);
+      try {
+         const stat = await fs.lstat(current);
+         if (stat.isSymbolicLink()) {
+            throw new InvalidParameterError('Symlink in repository file path is forbidden');
+         }
+      } catch (error) {
+         if (isEnoent(error)) {
+            break;
+         }
+         throw error;
+      }
+   }
+   return candidate;
+}
+
+/**
+ * Converts an absolute path to a POSIX path relative to the real repository root.
+ * @param rootPath - Repository root
+ * @param absolutePath - Absolute path already resolved inside the repository
+ */
+export async function toRepoRelativePath(rootPath: string, absolutePath: string): Promise<string> {
+   const root = await fs.realpath(rootPath);
+   const relative = path.relative(root, absolutePath).replace(/\\/g, '/');
+   if (relative.length === 0 || relativeEscapesRoot(relative)) {
+      throw new InvalidParameterError('Repository file path escapes the repository');
+   }
+   return relative;
+}
+
+/**
+ * Reads an existing repository file with a size limit.
+ * Returns undefined when the file is missing, too large, or contains NUL bytes.
+ * Symlinks are rejected.
+ * @param rootPath - Repository root
+ * @param relativePath - Path relative to the repository root
+ */
+export async function readContainedRepoFile(
+   rootPath: string,
+   relativePath: string
+): Promise<string | undefined> {
+   const filename = await resolveContainedRepoFile(rootPath, relativePath);
+   try {
+      const handle = await fs.open(filename, constants.O_RDONLY | noFollowFlag());
+      try {
+         const stat = await handle.stat();
+         if (!stat.isFile() || stat.size > MAX_FILE_SIZE_BYTES) {
+            return undefined;
+         }
+         const content = await handle.readFile({ encoding: 'utf8' });
+         if (content.includes('\0')) {
+            return undefined;
+         }
+         return content;
+      } finally {
+         await handle.close();
+      }
+   } catch (error) {
+      if (isEnoent(error)) {
+         return undefined;
+      }
+      throw error;
+   }
+}
+
+/**
+ * Atomically replaces a report inside the repository.
+ * The temporary file is created in a validated directory. Rename replaces the destination name.
+ * Missing parent directories are created only when every segment stays inside the repository.
+ * @param rootPath - Repository root
+ * @param relativePath - Path relative to the repository root
+ * @param content - File content
+ */
+export async function writeContainedRepoFile(
+   rootPath: string,
+   relativePath: string,
+   content: string
+): Promise<void> {
+   const filename = await resolveContainedRepoFile(rootPath, relativePath);
+   const realParent = await ensureContainedParentDirectory(rootPath, filename);
+   const temporary = path.join(
+      realParent,
+      `.${path.basename(filename)}.${randomBytes(TEMP_FILE_RANDOM_BYTES).toString('hex')}.tmp`
+   );
+   let created = false;
+   try {
+      const handle = await fs.open(
+         temporary,
+         constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | noFollowFlag(),
+         REPORT_FILE_MODE
+      );
+      created = true;
+      try {
+         await handle.writeFile(content, 'utf8');
+         await handle.sync();
+      } finally {
+         await handle.close();
+      }
+      // Re-check immediately before replacement. This is not a substitute for an
+      // OS-level sandbox if an attacker can mutate the tree concurrently.
+      await resolveContainedRepoFile(rootPath, relativePath);
+      await fs.rename(temporary, filename);
+      created = false;
+   } finally {
+      if (created) {
+         await fs.unlink(temporary).catch(() => undefined);
+      }
+   }
+}
+
+/**
  * Reads a bounded text file for LLM context, redacting obvious secrets.
  * @param rootPath - Repository root
  * @param relativePath - Relative file path
@@ -176,21 +309,8 @@ export async function readContextFile(
    rootPath: string,
    relativePath: string
 ): Promise<string | undefined> {
-   const fullPath = path.join(rootPath, relativePath);
-   let stat;
-   try {
-      stat = await fs.stat(fullPath);
-   } catch {
-      return undefined;
-   }
-   if (!stat.isFile() || stat.size > MAX_FILE_SIZE_BYTES) {
-      return undefined;
-   }
-   const content = await readTextFileIfExists(fullPath);
-   if (!content) {
-      return undefined;
-   }
-   if (content.includes('\0')) {
+   const content = await readContainedRepoFile(rootPath, relativePath);
+   if (content === undefined || content.length === 0 || content.includes('\0')) {
       return undefined;
    }
    return redactSecrets(content);
@@ -203,9 +323,70 @@ export async function readContextFile(
 export function redactSecrets(content: string): string {
    let redacted = content;
    for (const pattern of SECRET_PATTERNS) {
+      pattern.lastIndex = 0;
       redacted = redacted.replace(pattern, '[REDACTED]');
    }
    return redacted;
+}
+
+function isAbsoluteInputPath(relativePath: string): boolean {
+   return path.isAbsolute(relativePath) || path.win32.isAbsolute(relativePath) || path.posix.isAbsolute(relativePath);
+}
+
+function relativeEscapesRoot(relative: string): boolean {
+   const normalized = relative.replace(/\\/g, '/');
+   return normalized === '..' || normalized.startsWith('../') || path.win32.isAbsolute(normalized) || path.posix.isAbsolute(normalized);
+}
+
+function isEnoent(error: unknown): boolean {
+   return Boolean(error) && typeof error === 'object' && (error as NodeJS.ErrnoException).code === 'ENOENT';
+}
+
+function noFollowFlag(): number {
+   return constants.O_NOFOLLOW ?? 0;
+}
+
+/**
+ * Creates missing parent directories without following a symlink out of the repository.
+ * @param rootPath - Repository root
+ * @param filename - Absolute destination file path inside the repository
+ * @returns Real path of the parent directory
+ */
+async function ensureContainedParentDirectory(rootPath: string, filename: string): Promise<string> {
+   const realRoot = await fs.realpath(rootPath);
+   const parent = path.dirname(filename);
+   const parentRel = path.relative(realRoot, parent);
+   if (relativeEscapesRoot(parentRel)) {
+      throw new InvalidParameterError('Report destination escapes repository');
+   }
+   if (parentRel.length === 0) {
+      return realRoot;
+   }
+
+   let current = realRoot;
+   for (const part of parentRel.split(path.sep)) {
+      current = path.join(current, part);
+      try {
+         const stat = await fs.lstat(current);
+         if (stat.isSymbolicLink()) {
+            throw new InvalidParameterError('Symlink in repository file path is forbidden');
+         }
+         if (!stat.isDirectory()) {
+            throw new InvalidParameterError('Report destination parent is not a directory');
+         }
+      } catch (error) {
+         if (!isEnoent(error)) {
+            throw error;
+         }
+         await fs.mkdir(current);
+      }
+   }
+
+   const realParent = await fs.realpath(current);
+   if (relativeEscapesRoot(path.relative(realRoot, realParent))) {
+      throw new InvalidParameterError('Report destination escapes repository');
+   }
+   return realParent;
 }
 
 export { MAX_FILE_SIZE_BYTES, DEFAULT_IGNORED_DIRS };

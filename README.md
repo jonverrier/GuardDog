@@ -314,15 +314,15 @@ guarddog review <repoPath> \
 
 | Option | Description |
 |--------|-------------|
-| `--design <path>` | Architecture intent / design file |
-| `--out <path>` | Markdown output path |
-| `--json <path>` | JSON output path |
+| `--design <path>` | Architecture intent / design file inside the repository |
+| `--out <path>` | Markdown output path inside the repository |
+| `--json <path>` | JSON output path inside the repository |
 | `--min-severity <level>` | `low` \| `medium` \| `high` \| `critical` (default: `medium`) |
 | `--min-impact <level>` | `low` \| `medium` \| `high` \| `critical` (default: `medium`) |
 | `--max-findings <number>` | Limit number of findings (default: 20) |
 | `--dry-run` | Do not write files or create issues |
-| `--github-issue` | Enable GitHub issue creation |
-| `--repo <owner/name>` | GitHub repo target |
+| `--github-issue` | Enable GitHub issue creation (not taken from the target repo config) |
+| `--repo <owner/name>` | GitHub repo target (not taken from the target repo config) |
 | `--issue-mode single\|per-finding` | Issue creation mode (default: `single`) |
 | `--model <model-name>` | LLM model name |
 | `--context-token-budget <n>` | Source file token budget (default: `32000`) |
@@ -362,7 +362,11 @@ guarddog review . \
   --confirm
 ```
 
-Requires `GITHUB_TOKEN`. Without `--confirm`, issue title and body are printed only (dry-run).
+Requires `GITHUB_TOKEN` and both `--github-issue` and `--repo`. Without `--confirm`, issue title and body are printed only (dry-run).
+
+`github.enabled` and `github.repo` in `.guarddog/guarddog.config.json` are ignored. A repository under review cannot turn issue creation on or choose the destination. `github.issueMode` from that file is still used unless `--issue-mode` is passed.
+
+`--design`, `--out`, `--json`, and the same fields in the config file must stay inside the repository. Absolute paths, `..` segments, and symlinks are rejected. Design and source text is redacted for obvious secrets, including OpenSSH private keys, before it is sent to the model.
 
 ---
 
@@ -371,19 +375,19 @@ Requires `GITHUB_TOKEN`. Without `--confirm`, issue title and body are printed o
 Launch **one Cursor cloud agent per platform package** (`platform`, `platform-client`, `platform-server`), run GuardDog against that package's `DESIGN.md`, then write **one StrongAI inbox issue per package** and optionally sync those files to real GitHub issues.
 
 ```bash
-# 1) Dry-run: cloud reviews + local drafts under .guarddog/strongai-issue-drafts/
-export CURSOR_API_KEY=cursor_...
-export OPENAI_API_KEY=sk-...
-# Optional: private npm auth for GuardDog deps inside the cloud VM
-export NODE_AUTH_TOKEN=${GITHUB_TOKEN}
-
+# 1) Dry-run: print the review plan. Does not launch agents or send tokens.
 npm run build
 npm run review:strongai-platforms -- --dry-run
 
 # Or via the CLI directly:
 node dist/cli/index.js review-strongai-platforms --dry-run
 
-# 2) Write into the local StrongAI issues/ inbox (no GitHub yet)
+# 2) Launch cloud agents and write into the local StrongAI issues/ inbox (no GitHub yet)
+export CURSOR_API_KEY=cursor_...
+export OPENAI_API_KEY=sk-...
+# Optional npm auth inside the cloud VM. Set this explicitly; GITHUB_TOKEN is not forwarded.
+export NODE_AUTH_TOKEN=...
+
 node dist/cli/index.js review-strongai-platforms \
   --strongai-path ../StrongAI
 
@@ -414,7 +418,7 @@ That script creates GitHub issues on `jonverrier/StrongAI` and writes `**GitHub:
 
 | Option | Description |
 |--------|-------------|
-| `--dry-run` | Write drafts under `.guarddog/strongai-issue-drafts/` (skip StrongAI/issues and sync) |
+| `--dry-run` | Print which packages would be reviewed. Does not launch cloud agents, send tokens, or write drafts |
 | `--sync` | After writing `issues/`, run StrongAI `sync-issues-to-github.sh` |
 | `--confirm` | With `--sync`, actually create GitHub issues (otherwise print the sync command only) |
 | `--strongai-path <path>` | Local StrongAI monorepo root (default: `STRONGAI_PATH` or `../StrongAI`) |
@@ -509,7 +513,7 @@ When `truncation.budgetExhausted` is true, the review output notes a **sampled r
 | `CURSOR_API_KEY` | Required for `review-strongai-platforms` cloud agents ([Dashboard → Integrations](https://cursor.com/dashboard/integrations)) |
 | `STRONGAI_PATH` | Optional local StrongAI monorepo root for writing `issues/*.md` |
 | `GITHUB_TOKEN` | Required for confirmed GitHub issue creation / StrongAI issue sync (`gh`) |
-| `NODE_AUTH_TOKEN` | Optional; passed into cloud VMs for GitHub Packages (`@jonverrier/*`) installs |
+| `NODE_AUTH_TOKEN` | Optional. When set, passed into cloud VMs for GitHub Packages (`@jonverrier/*`) installs. `GITHUB_TOKEN` is never copied into this variable |
 | `GUARDDOG_DEBUG` | Set to `1` for debug logging |
 
 ---

@@ -53,12 +53,13 @@ export async function loadConfig(
    cliOptions: IReviewCliOptions
 ): Promise<IGuardDogConfig> {
    const fileConfig = await loadConfigFile(repoPath);
+   const fileIssueMode = readFileIssueMode(fileConfig.github);
    const merged: IGuardDogConfig = {
       ...DEFAULT_CONFIG,
       ...fileConfig,
       github: {
-         ...DEFAULT_CONFIG.github,
-         ...fileConfig.github
+         enabled: DEFAULT_CONFIG.github.enabled,
+         issueMode: fileIssueMode ?? DEFAULT_CONFIG.github.issueMode
       }
    };
 
@@ -121,6 +122,25 @@ export async function loadConfig(
    validateSeverity(merged.minImpact, 'minImpact');
 
    return merged;
+}
+
+/**
+ * Reads issue layout from a target repo config.
+ * `enabled` and `repo` are ignored so the reviewed repository cannot open issues or choose the destination.
+ * @param github - GitHub section from the config file, if present
+ */
+function readFileIssueMode(
+   github: Partial<IGuardDogConfig['github']> | undefined
+): IGuardDogConfig['github']['issueMode'] | undefined {
+   if (!github || typeof github !== 'object' || github.issueMode === undefined) {
+      return undefined;
+   }
+   if (github.issueMode === 'single' || github.issueMode === 'per-finding') {
+      return github.issueMode;
+   }
+   throw new InvalidParameterError(
+      `Invalid github.issueMode: ${String(github.issueMode)}. Expected single or per-finding.`
+   );
 }
 
 function validateSeverity(value: string, fieldName: string): void {
