@@ -217,25 +217,37 @@ export async function readContainedRepoFile(rootPath: string, relativePath: stri
 }
 
 /**
- * Write a report inside the repository, without following symlinked directories
- * or overwriting an existing symlink. The destination is created exclusively.
+ * Atomically replace a report within the repository. The temporary file is
+ * exclusively created in the validated directory; rename replaces a symlink
+ * itself rather than following its target.
  */
 export async function writeContainedRepoFile(rootPath: string, relativePath: string, content: string): Promise<void> {
    const filename = await resolveContainedRepoFile(rootPath, relativePath);
    const parent = path.dirname(filename);
-   // Do not create missing parents from untrusted configuration.
    const realParent = await fs.realpath(parent);
    const realRoot = await fs.realpath(rootPath);
    const parentRel = path.relative(realRoot, realParent);
    if (parentRel === '..' || parentRel.startsWith('..' + path.sep) || path.isAbsolute(parentRel)) {
       throw new InvalidParameterError('Report destination escapes repository');
    }
-   // O_NOFOLLOW guards the leaf; exclusive creation prevents replacing existing files.
-   const handle = await fs.open(filename, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | (constants.O_NOFOLLOW ?? 0), 0o600);
+   const { randomBytes } = await import('crypto');
+   const temporary = path.join(realParent, '.' + path.basename(filename) + '.' + randomBytes(12).toString('hex') + '.tmp');
+   let created = false;
    try {
-      await handle.writeFile(content, 'utf8');
+      const handle = await fs.open(temporary, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | (constants.O_NOFOLLOW ?? 0), 0o600);
+      created = true;
+      try {
+         await handle.writeFile(content, 'utf8');
+         await handle.sync();
+      } finally {
+         await handle.close();
+      }
+      // Check again before replacement. This is not a substitute for an
+      // OS-level sandbox if an attacker can mutate the tree concurrently.
+      await resolveContainedRepoFile(rootPath, relativePath);
+      await fs.rename(temporary, filename);
    } finally {
-      await handle.close();
+      if (created) await fs.unlink(temporary).catch(() => undefined);
    }
 }
 
