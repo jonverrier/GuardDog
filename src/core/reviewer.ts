@@ -22,7 +22,7 @@ import { buildContextCoverageSummary } from './contextCoverageNotes';
 import { buildReviewPromptParams } from './reviewPromptBuilder';
 import { IReviewCliOptions } from '../schemas/config';
 import { IReviewResult } from '../schemas/finding';
-import { resolveRepoPath, writeTextFile } from '../utils/fileSystem';
+import { resolveRepoPath, writeTextFile, resolveContainedRepoFile } from '../utils/fileSystem';
 import { ILogger, defaultLogger } from '../utils/logger';
 import { InvalidOperationError } from '../utils/errors';
 
@@ -112,9 +112,7 @@ export async function runReview(
    );
 
    const markdown = renderMarkdownReview(validated);
-   const markdownPath = path.isAbsolute(config.outputMarkdown)
-      ? config.outputMarkdown
-      : path.join(repoPath, config.outputMarkdown);
+   const markdownPath = await resolveContainedRepoFile(repoPath, config.outputMarkdown);
 
    if (!cliOptions.dryRun) {
       await writeTextFile(markdownPath, markdown);
