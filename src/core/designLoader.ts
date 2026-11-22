@@ -15,9 +15,8 @@
 // ===End StrongAI Generated Comment===
 
 
-import * as path from 'path';
 import { DEFAULT_DESIGN_CANDIDATES } from '../schemas/config';
-import { readContainedRepoFile, redactSecrets } from '../utils/fileSystem';
+import { readContainedRepoFile, resolveContainedRepoFile, redactSecrets } from '../utils/fileSystem';
 import { ILogger, defaultLogger } from '../utils/logger';
 
 export interface IDesignLoadResult {
@@ -38,7 +37,7 @@ export async function loadDesignFile(
    logger: ILogger = defaultLogger
 ): Promise<IDesignLoadResult> {
    if (designPath) {
-      const resolved = await import('../utils/fileSystem').then(m => m.resolveContainedRepoFile(repoPath, designPath));
+      const resolved = await resolveContainedRepoFile(repoPath, designPath);
       const content = await readContainedRepoFile(repoPath, designPath);
       if (!content) {
          const warning =
@@ -51,7 +50,6 @@ export async function loadDesignFile(
    }
 
    for (const candidate of DEFAULT_DESIGN_CANDIDATES) {
-      const fullPath = path.join(repoPath, candidate);
       const content = await readContainedRepoFile(repoPath, candidate);
       if (content) {
          return { designFile: candidate, designContent: content };
