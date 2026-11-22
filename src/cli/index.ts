@@ -51,7 +51,7 @@ Review options:
   --confirm                    Confirm GitHub issue creation
 
 StrongAI platform cloud review options:
-  --dry-run                    Write drafts under .guarddog/strongai-issue-drafts (no StrongAI/issues write, no sync)
+  --dry-run                    Print the cloud review plan only; do not launch agents or send tokens
   --sync                       After writing issues/, invoke StrongAI sync-issues-to-github.sh
   --confirm                    With --sync, actually create GitHub issues (otherwise print the sync command)
   --strongai-path <path>       Local StrongAI monorepo root (default: STRONGAI_PATH or ../StrongAI)

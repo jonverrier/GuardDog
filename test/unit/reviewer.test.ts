@@ -10,7 +10,7 @@ import * as findingParser from '../../src/core/findingParser';
 import { runReview } from '../../src/core/reviewer';
 import { PromptRepositoryLlmProvider } from '../../src/core/llmProvider';
 import { DEFAULT_REVIEW_RESULT } from '../../src/schemas/finding';
-import { InvalidOperationError } from '../../src/utils/errors';
+import { InvalidOperationError, InvalidParameterError } from '../../src/utils/errors';
 import * as fileSystem from '../../src/utils/fileSystem';
 import { ILogger } from '../../src/utils/logger';
 
@@ -51,5 +51,26 @@ describe('reviewer', () => {
 
       expect(saveDebugSpy).not.toHaveBeenCalled();
       expect(writeSpy).not.toHaveBeenCalled();
+   });
+
+   it('rejects a report path outside the repository before calling the LLM', async () => {
+      const llmProvider = {
+         getStructuredReview: jest.fn()
+      } as unknown as PromptRepositoryLlmProvider;
+
+      await expect(
+         runReview(
+            {
+               repoPath: FIXTURE_REPO,
+               out: '../outside.md',
+               json: '../../.bashrc',
+               dryRun: true
+            },
+            silentLogger(),
+            llmProvider
+         )
+      ).rejects.toThrow(InvalidParameterError);
+
+      expect(llmProvider.getStructuredReview).not.toHaveBeenCalled();
    });
 });

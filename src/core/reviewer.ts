@@ -9,7 +9,6 @@
 // ===End StrongAI Generated Comment===
 
 
-import * as path from 'path';
 import { loadConfig } from './configLoader';
 import { loadDesignFile } from './designLoader';
 import { generateRepoMap } from './repoScanner';
@@ -45,6 +44,11 @@ export async function runReview(
 ): Promise<IReviewRunResult> {
    const repoPath = await resolveRepoPath(cliOptions.repoPath);
    const config = await loadConfig(repoPath, cliOptions);
+   const markdownPath = await resolveContainedRepoFile(repoPath, config.outputMarkdown);
+   let jsonPath: string | undefined;
+   if (config.outputJson) {
+      jsonPath = await resolveContainedRepoFile(repoPath, config.outputJson);
+   }
 
    const c4Options = {
       componentFile: config.componentFile,
@@ -112,7 +116,6 @@ export async function runReview(
    );
 
    const markdown = renderMarkdownReview(validated);
-   const markdownPath = await resolveContainedRepoFile(repoPath, config.outputMarkdown);
 
    if (!cliOptions.dryRun) {
       await writeContainedRepoFile(repoPath, config.outputMarkdown, markdown);
@@ -121,11 +124,7 @@ export async function runReview(
       logger.info(`[dry-run] Would write Markdown to ${markdownPath}`);
    }
 
-   let jsonPath: string | undefined;
-   if (config.outputJson) {
-      jsonPath = path.isAbsolute(config.outputJson)
-         ? config.outputJson
-         : path.join(repoPath, config.outputJson);
+   if (config.outputJson && jsonPath) {
       if (!cliOptions.dryRun) {
          await writeContainedRepoFile(repoPath, config.outputJson, JSON.stringify(validated, null, 2));
          logger.info(`JSON review written to ${jsonPath}`);

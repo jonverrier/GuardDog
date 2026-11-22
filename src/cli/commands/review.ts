@@ -13,8 +13,9 @@ import { runReview } from '../../core/reviewer';
 import { loadConfig } from '../../core/configLoader';
 import { parseImpact, parseSeverity } from '../../core/configLoader';
 import { createGitHubIssues } from '../../github/githubClient';
-import { renderPerFindingIssues, renderSingleIssue } from '../../github/issueRenderer';
+import { IIssueDraft, renderPerFindingIssues, renderSingleIssue } from '../../github/issueRenderer';
 import { IReviewCliOptions, IssueMode } from '../../schemas/config';
+import { IReviewResult } from '../../schemas/finding';
 import { resolveRepoPath } from '../../utils/fileSystem';
 import { defaultLogger } from '../../utils/logger';
 import { InvalidParameterError } from '../../utils/errors';
@@ -31,18 +32,15 @@ export async function runReviewCommand(args: string[]): Promise<number> {
    const reviewResult = await runReview({ ...options, repoPath }, defaultLogger);
    const config = await loadConfig(repoPath, { ...options, repoPath });
 
-   if (config.github.enabled) {
+   const githubRequested = options.githubIssue === true && options.noGithub !== true;
+   if (githubRequested) {
       const confirm = options.confirm === true;
-      const repo = config.github.repo;
+      const repo = options.repo;
       if (!repo) {
          throw new InvalidParameterError('--repo owner/name is required with --github-issue.');
       }
 
-      const drafts =
-         config.github.issueMode === 'per-finding'
-            ? renderPerFindingIssues(reviewResult.result)
-            : [renderSingleIssue(reviewResult.result)];
-
+      const drafts = issueDraftsForMode(config.github.issueMode, reviewResult.result);
       await createGitHubIssues(repo, drafts, confirm, defaultLogger);
    }
 
@@ -50,6 +48,19 @@ export async function runReviewCommand(args: string[]): Promise<number> {
       `Review complete: ${reviewResult.result.summary.findingCount} finding(s), overall risk ${reviewResult.result.summary.overallRisk}.`
    );
    return 0;
+}
+
+function issueDraftsForMode(issueMode: IssueMode, result: IReviewResult): IIssueDraft[] {
+   switch (issueMode) {
+      case 'per-finding':
+         return renderPerFindingIssues(result);
+      case 'single':
+         return [renderSingleIssue(result)];
+      default: {
+         const unexpected: never = issueMode;
+         throw new InvalidParameterError(`Invalid issue mode: ${String(unexpected)}`);
+      }
+   }
 }
 
 function parseReviewArgs(args: string[]): { repoPath: string; options: IReviewCliOptions } {

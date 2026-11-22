@@ -7,7 +7,7 @@
 // ===Start StrongAI Generated Comment (20260524)===
 // This module locates and loads an “architecture intent” or design document for a repository. It supports an explicit design file path or a set of default candidate filenames, and returns either the loaded content or a warning describing what was checked.
 // 
-// The main export is loadDesignFile(repoPath, designPath, logger). When designPath is provided, it resolves the path relative to the repo root (or uses it as-is if absolute), attempts to read it, and returns the content plus a normalized repo-relative filename. If the file is missing, it logs a warning and returns only the warning. When designPath is not provided, it iterates through DEFAULT_DESIGN_CANDIDATES under the repo root and returns the first file that exists.
+// The main export is loadDesignFile(repoPath, designPath, logger). When designPath is provided, it resolves the path inside the repo root, rejects absolute paths, parent traversal, and symlinks, and returns the content plus a normalized repo-relative filename. Secret-like text, including private key blocks, is redacted before the content is returned. If the file is missing, it logs a warning and returns only the warning. When designPath is not provided, it iterates through DEFAULT_DESIGN_CANDIDATES under the repo root and returns the first file that exists, also redacted.
 // 
 // It returns an IDesignLoadResult containing designFile, designContent, and/or warning.
 // 
@@ -16,7 +16,12 @@
 
 
 import { DEFAULT_DESIGN_CANDIDATES } from '../schemas/config';
-import { readContainedRepoFile, resolveContainedRepoFile, redactSecrets } from '../utils/fileSystem';
+import {
+   readContainedRepoFile,
+   redactSecrets,
+   resolveContainedRepoFile,
+   toRepoRelativePath
+} from '../utils/fileSystem';
 import { ILogger, defaultLogger } from '../utils/logger';
 
 export interface IDesignLoadResult {
@@ -45,14 +50,14 @@ export async function loadDesignFile(
          logger.warn(warning);
          return { warning };
       }
-      const relative = path.relative(repoPath, resolved).replace(/\\/g, '/');
+      const relative = await toRepoRelativePath(repoPath, resolved);
       return { designFile: relative, designContent: redactSecrets(content) };
    }
 
    for (const candidate of DEFAULT_DESIGN_CANDIDATES) {
       const content = await readContainedRepoFile(repoPath, candidate);
       if (content) {
-         return { designFile: candidate, designContent: content };
+         return { designFile: candidate, designContent: redactSecrets(content) };
       }
    }
 

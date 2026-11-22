@@ -18,4 +18,15 @@ describe('fileSystem', () => {
       expect(redactSecrets(source)).toContain('[REDACTED]');
       expect(redactSecrets(source)).not.toContain('super-secret-value-here');
    });
+
+   it('redacts OpenSSH private key blocks', () => {
+      const source = [
+         '-----BEGIN OPENSSH PRIVATE KEY-----',
+         'FAKE_PRIVATE_KEY_MATERIAL',
+         '-----END OPENSSH PRIVATE KEY-----'
+      ].join('\n');
+      const redacted = redactSecrets(source);
+      expect(redacted).not.toContain('FAKE_PRIVATE_KEY_MATERIAL');
+      expect(redactSecrets(source)).not.toContain('FAKE_PRIVATE_KEY_MATERIAL');
+   });
 });
