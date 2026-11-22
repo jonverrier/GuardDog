@@ -182,7 +182,6 @@ export async function resolveContainedRepoFile(rootPath: string, relativePath: s
    if (!rel || rel === '..' || rel.startsWith('..' + path.sep) || path.isAbsolute(rel)) {
       throw new InvalidParameterError('Repository file path escapes the repository');
    }
-   // Reject symlinks at every existing component; do not trust a lexical check alone.
    let current = root;
    for (const part of rel.split(path.sep)) {
       current = path.join(current, part);
@@ -199,7 +198,7 @@ export async function resolveContainedRepoFile(rootPath: string, relativePath: s
    return candidate;
 }
 
-/** Read an existing repository file without following a final-component symlink. */
+/** Read an existing repository file with size limits and final-symlink protection. */
 export async function readContainedRepoFile(rootPath: string, relativePath: string): Promise<string | undefined> {
    const filename = await resolveContainedRepoFile(rootPath, relativePath);
    try {
@@ -214,6 +213,29 @@ export async function readContainedRepoFile(rootPath: string, relativePath: stri
    } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined;
       throw error;
+   }
+}
+
+/**
+ * Write a report inside the repository, without following symlinked directories
+ * or overwriting an existing symlink. The destination is created exclusively.
+ */
+export async function writeContainedRepoFile(rootPath: string, relativePath: string, content: string): Promise<void> {
+   const filename = await resolveContainedRepoFile(rootPath, relativePath);
+   const parent = path.dirname(filename);
+   // Do not create missing parents from untrusted configuration.
+   const realParent = await fs.realpath(parent);
+   const realRoot = await fs.realpath(rootPath);
+   const parentRel = path.relative(realRoot, realParent);
+   if (parentRel === '..' || parentRel.startsWith('..' + path.sep) || path.isAbsolute(parentRel)) {
+      throw new InvalidParameterError('Report destination escapes repository');
+   }
+   // O_NOFOLLOW guards the leaf; exclusive creation prevents replacing existing files.
+   const handle = await fs.open(filename, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | (constants.O_NOFOLLOW ?? 0), 0o600);
+   try {
+      await handle.writeFile(content, 'utf8');
+   } finally {
+      await handle.close();
    }
 }
 
