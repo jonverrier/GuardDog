@@ -22,7 +22,7 @@ import { buildContextCoverageSummary } from './contextCoverageNotes';
 import { buildReviewPromptParams } from './reviewPromptBuilder';
 import { IReviewCliOptions } from '../schemas/config';
 import { IReviewResult } from '../schemas/finding';
-import { resolveRepoPath, writeTextFile, resolveContainedRepoFile } from '../utils/fileSystem';
+import { resolveRepoPath, writeContainedRepoFile, resolveContainedRepoFile } from '../utils/fileSystem';
 import { ILogger, defaultLogger } from '../utils/logger';
 import { InvalidOperationError } from '../utils/errors';
 
@@ -115,7 +115,7 @@ export async function runReview(
    const markdownPath = await resolveContainedRepoFile(repoPath, config.outputMarkdown);
 
    if (!cliOptions.dryRun) {
-      await writeTextFile(markdownPath, markdown);
+      await writeContainedRepoFile(repoPath, config.outputMarkdown, markdown);
       logger.info(`Markdown review written to ${markdownPath}`);
    } else {
       logger.info(`[dry-run] Would write Markdown to ${markdownPath}`);
@@ -127,7 +127,7 @@ export async function runReview(
          ? config.outputJson
          : path.join(repoPath, config.outputJson);
       if (!cliOptions.dryRun) {
-         await writeTextFile(jsonPath, JSON.stringify(validated, null, 2));
+         await writeContainedRepoFile(repoPath, config.outputJson, JSON.stringify(validated, null, 2));
          logger.info(`JSON review written to ${jsonPath}`);
       } else {
          logger.info(`[dry-run] Would write JSON to ${jsonPath}`);
